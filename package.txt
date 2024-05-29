@@ -1,0 +1,2 @@
+树莓派4b——开机后自动打开终端Terminal并执行指定代码或python代码 https://blog.csdn.net/qq_16775293/article/details/108674248
+【Python教程】保姆版教使用Pyinstaller 打包python成exe文件 https://blog.csdn.net/flyskymood/article/details/123668136
