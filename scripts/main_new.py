@@ -501,7 +501,7 @@ if __name__ == "__main__":
                 # 监听遥控命令
                 if key_value == 24:# 退出程序
                     break
-                elif key_value == 8:# 开关AI
+                elif key_value == 82:# 开关AI
                     assistant_flag = not assistant_flag
                     if assistant_flag:
                         print('open AI')
@@ -513,7 +513,7 @@ if __name__ == "__main__":
                     handleCapture = threading.Timer(0,handle_capture,(frame,))
                     handleCapture.start()
                     
-                elif key_value == 255:# 生成pdf文件
+                elif key_value == 84:# 生成pdf文件
                     
                     handlePdf = threading.Timer(0,handle_pdf)
                     handlePdf.start()
