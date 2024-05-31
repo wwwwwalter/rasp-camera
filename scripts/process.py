@@ -238,7 +238,7 @@ if __name__ == "__main__":
 
 
 
-    frame_queue = Queue(maxsize=10)
+    frame_queue = Queue(maxsize=2)
     resize_queue = Queue(maxsize=2)
     puttext_queue = Queue(maxsize=2)
     
