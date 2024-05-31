@@ -138,7 +138,8 @@ def update_ui_info(frame):
 def init_camera():
     global video,frame,camera_status,key_value
     try:
-        video = cv2.VideoCapture(0)
+        video = cv2.VideoCapture(0,cv2.CAP_V4L2)
+        video.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter.fourcc('M','J','P','G'))
         if not video.isOpened():
             raise BaseException
     except BaseException:
@@ -150,14 +151,21 @@ def init_camera():
     else:
         camera_status = True
         
-        video.set(cv2.CAP_PROP_FPS,30)
+        
         video.set(cv2.CAP_PROP_FRAME_WIDTH, weight)
         video.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        video.set(cv2.CAP_PROP_FPS,30)
         
         fps = video.get(cv2.CAP_PROP_FPS)
         size = (int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         print(fps)
         print(size)
+        
+        # 获取FourCC  
+        fourcc = int(video.get(cv2.CAP_PROP_FOURCC))  
+        # 将FourCC转换为对应的字符  
+        fourcc_char = chr((fourcc >> 0) & 0xFF) + chr((fourcc >> 8) & 0xFF) + chr((fourcc >> 16) & 0xFF) + chr((fourcc >> 24) & 0xFF)  
+        print(f"Current FourCC: {fourcc_char}") 
 
 
 
@@ -467,6 +475,10 @@ if __name__ == "__main__":
     # 创建opencv主窗口
     cv2.namedWindow("image",cv2.WINDOW_FREERATIO)
     cv2.setWindowProperty("image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    
+    # 记录开始时间和帧计数  
+    start_time = time.time()  
+    frame_count = 0 
 
     while True:       
         # 检查相机状态
@@ -490,6 +502,12 @@ if __name__ == "__main__":
                     disease_probability_info=""
                     report_simplified_info=""
                     treatment_simplified_info=""
+                    
+                frame_count+=1
+                
+                # 运行一定时间后退出循环，以避免无限循环  
+                if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
+                    break 
                     
                 
             
@@ -526,7 +544,10 @@ if __name__ == "__main__":
            
 
 
-
+    # 计算并打印估算的帧率  
+    elapsed_time = time.time() - start_time  
+    estimated_fps = frame_count / elapsed_time  
+    print(f"input FPS: {estimated_fps:.2f} FRAMES:{frame_count}")
 
 
         
