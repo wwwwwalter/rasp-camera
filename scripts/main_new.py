@@ -506,8 +506,8 @@ if __name__ == "__main__":
                 frame_count+=1
                 
                 # 运行一定时间后退出循环，以避免无限循环  
-                if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
-                    break 
+                # if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
+                #     break 
                     
                 
             
@@ -516,25 +516,28 @@ if __name__ == "__main__":
                 cv2.imshow("image", frame)
                 key_value=cv2.waitKey(1)
                 
-                # 监听遥控命令
-                if key_value == 24:# 退出程序
-                    break
-                elif key_value == 8:# 开关AI
-                    assistant_flag = not assistant_flag
-                    if assistant_flag:
-                        print('open AI')
-                    else:
-                        print('close AI')
+                if key_value == -1:
+                    pass
+                else:
+                    # 监听遥控命令
+                    if key_value == 27:# 退出程序
+                        break
+                    elif key_value == 24:# 开关AI
+                        assistant_flag = not assistant_flag
+                        if assistant_flag:
+                            print('open AI')
+                        else:
+                            print('close AI')
 
 
-                elif key_value == 13: # 保存照片
-                    handleCapture = threading.Timer(0,handle_capture,(frame,))
-                    handleCapture.start()
-                    
-                elif key_value == 255:# 生成pdf文件
-                    
-                    handlePdf = threading.Timer(0,handle_pdf)
-                    handlePdf.start()
+                    elif key_value == 13: # 保存照片
+                        handleCapture = threading.Timer(0,handle_capture,(frame,))
+                        handleCapture.start()
+                        
+                    elif key_value == 103:# 生成pdf文件
+                        
+                        handlePdf = threading.Timer(0,handle_pdf)
+                        handlePdf.start()
                 
                 
         else:
@@ -544,10 +547,10 @@ if __name__ == "__main__":
            
 
 
-    # 计算并打印估算的帧率  
-    elapsed_time = time.time() - start_time  
-    estimated_fps = frame_count / elapsed_time  
-    print(f"input FPS: {estimated_fps:.2f} FRAMES:{frame_count}")
+    # # 计算并打印估算的帧率  
+    # elapsed_time = time.time() - start_time  
+    # estimated_fps = frame_count / elapsed_time  
+    # print(f"input FPS: {estimated_fps:.2f} FRAMES:{frame_count}")
 
 
         
