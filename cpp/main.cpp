@@ -99,7 +99,6 @@ void displayFrames()
 
         if (!frameQueue.empty())
         {
-
             cv::Mat frame = frameQueue.front();
             frameQueue.pop();
             putText(frame, msg, cv::Point(100, 100), font, 30, cv::Scalar(0, 0, 255));
@@ -107,16 +106,23 @@ void displayFrames()
             // putText(frame, msg, cv::Point(100, 800), font, 30, cv::Scalar(255, 255, 255));
 
             cv::imshow("Camera Feed", frame);
-            frame_count++;
-            std::cout << "show:" << frame_count << std::endl;
+
+            auto start_in = std::chrono::high_resolution_clock::now();
+            cv::waitKey(1);
+            auto end_in = std::chrono::high_resolution_clock::now();
+            std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_in - start_in);
+            std::cout << "show:" << ms.count() << "ms\n";
         }
         else
         {
-            empyt_count++;
-            std::cout << "out:" << empyt_count << std::endl;
+            auto start_in = std::chrono::high_resolution_clock::now();
+            cv::waitKey(10);
+            auto end_in = std::chrono::high_resolution_clock::now();
+            std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_in - start_in);
+            std::cout << "empty:" <<ms.count() << "ms\n";
         }
 
-        cv::waitKey(10);
+        //cv::waitKey(10);
 
         // auto start_in = std::chrono::high_resolution_clock::now();
         // // std::this_thread::sleep_for(std::chrono::milliseconds(5)); // 暂停5ms
