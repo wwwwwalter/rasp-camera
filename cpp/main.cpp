@@ -88,11 +88,12 @@ void displayFrames()
 {
     cv::namedWindow("Camera Feed", cv::WINDOW_KEEPRATIO);
     cv::setWindowProperty("Camera Feed", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
-    cvx::CvxFont font("/home/walter/rasp-camera/cpp/fonts/Noto.ttf");
+    cvx::CvxFont font("../fonts/Noto.ttf");
     cv::String msg = "这段代码首先初始化FreeType库，然后加载宋体字体文件，并设置字体大小。";
 
     int frame_count = 0;
     auto start = std::chrono::high_resolution_clock::now();
+    int empyt_count=0;
     while (!stopThreads)
     {
 
@@ -115,6 +116,7 @@ void displayFrames()
         else
         {
             // std::cout << "empty" << std::endl;
+            // std::cout << "empty:" << ++empyt_count << std::endl;
             cv::waitKey(1);
         }
 

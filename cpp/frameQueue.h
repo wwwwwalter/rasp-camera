@@ -6,6 +6,7 @@ class LimitedQueue {
 private:  
     std::queue<T> queue_;  
     size_t max_size_;  
+    int pop_count = 0;
   
 public:  
     LimitedQueue(size_t max_size) : max_size_(max_size) {}  
@@ -13,6 +14,7 @@ public:
     void push(const T& item) {  
         if (queue_.size() >= max_size_) {  
             queue_.pop();  // 弹出队列头部的元素，以保持队列大小  
+            std::cout << "pop" << ++pop_count<< std::endl;
         }  
         queue_.push(item);  
     }  
