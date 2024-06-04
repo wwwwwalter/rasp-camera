@@ -17,6 +17,7 @@ def draw_chinese_text(image, text, position, font_path, font_size, color=(0, 0, 
     # 加载字体  
     face = freetype.Face(font_path)  
     face.set_char_size(font_size*64)  # 设置字体大小  
+    
   
     # 绘制文本  
     x, y = position  

@@ -5,6 +5,7 @@ import time
 import json  
 import torch
 import threading
+import freetype
 import numpy as np
 import sklearn.metrics as mr
 from networks import LightNet
@@ -95,44 +96,79 @@ def handle_AI(frame):
     # 控制抽帧的频率
     time.sleep(3)
 
+def load_freetype():
+    font_path='/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf'
+    font_size=30
+    # 加载字体
+    face=freetype.Face(font_path)
+    face.set_char_size(font_size*64)
+    return face
+    
+def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255), thickness=-1):  
+    global face
+    face.set_char_size(font_size*64)
+    x, y = position  
+    for char in text:
+        if char=='\n':
+            # 回车
+            x=position[0]
+            # 换行
+            y=y+35 # 行间距
+            continue
+        face.load_char(char)  
+        
+        bitmap = face.glyph.bitmap  
+        left = face.glyph.bitmap_left  
+        top = face.glyph.bitmap_top  
+
+        # 将bitmap转换为OpenCV可以识别的格式  
+        glyph_image = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)  
+        # 去除边缘，第二个参数阈值
+        _, glyph_image_binary = cv2.threshold(glyph_image, 50, 255, cv2.THRESH_BINARY)
+
+
+        # 找到非零（即前景）像素的坐标 
+        contours, hierarchy = cv2.findContours(glyph_image_binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        
+
+        cv2.drawContours(image, contours, -1, color, -1, offset=(x + left, y - top)) 
+
+        
+        x += face.glyph.advance.x >> 6  
+
+
 
 def update_ui_info(frame):
-    # 把opencv frame转成 PIL 格式
-    img_PIL = Image.fromarray(frame[..., ::-1])  
-    draw = ImageDraw.Draw(img_PIL)  # 创建绘制对象
+
     global camera_status
     # 正常情况
     if camera_status:
-        # # 左上：显示概率
-        # global disease_probability_info
-        # draw.text(xy=(60,60), text=disease_probability_info, font=font25, fill=(255,0,0))
+
         
         # 左下：显示菜单
         global menu_info,assistant_flag,capture_count,pdf_count
         menu_info = "AI辅助诊断:%s\n已采集图像:%2d张\n已生成报告:%2d份\n" % ("开启" if assistant_flag else "关闭",capture_count,pdf_count)
-        draw.text(xy=(50,900), text=menu_info, font=font25, fill=(0,255,0))
+        draw_chinese_text(frame,menu_info,(50,900),font_size=30,color=(0,255,0))
         
-        # 右上：显示概率
-        global disease_probability_info
-        draw.text(xy=(1700,60), text=disease_probability_info, font=font25, fill=(255,0,0))
+        if assistant_flag:
+            # 右上：显示概率
+            global disease_probability_info
+            draw_chinese_text(frame,disease_probability_info,(1700,60),font_size=25,color=(0,0,255))
 
-        
-        # 右下：显示精简版报告和建议
-        global report_simplified_info
-        global treatment_simplified_info
-        report_simplified = report_simplified_info + treatment_simplified_info
-        # 使用join()和换行符来打印多行
-        chunk_size = 16  
-        chunks = [report_simplified[i:i+chunk_size] for i in range(0, len(report_simplified), chunk_size)]  
-        multi_line_string = "\n".join(chunks)
-        draw.text(xy=(1500,700),text=multi_line_string,font=font24,fill=(255,0,0))
+            
+            # 右下：显示精简版报告和建议
+            global report_simplified_info
+            global treatment_simplified_info
+            report_simplified = report_simplified_info + treatment_simplified_info
+            # 使用join()和换行符来打印多行
+            chunk_size = 16  
+            chunks = [report_simplified[i:i+chunk_size] for i in range(0, len(report_simplified), chunk_size)]  
+            multi_line_string = "\n".join(chunks)
+            # draw_chinese_text(frame,multi_line_string,(1500,700),font_size=25,color=(0,0,255))
         
     # 相机离线
     else:
-        draw.text(xy=(60,60), text="请检查相机是否正常连接", font=font25, fill=(255,0,0))
-         
-    # 再转成 OpenCV 的格式，记住 OpenCV 中通道排布是 BGR
-    frame = cv2.cvtColor(np.asarray(img_PIL), cv2.COLOR_RGB2BGR) 
+        draw_chinese_text(frame,"请检查相机是否正常连接",(60,60),font_size=30,color=(0,255,0))
     
 
     return frame
@@ -457,21 +493,23 @@ if __name__ == "__main__":
     
 
 
-    # font = ImageFont.truetype('STZHONGS.TTF', 20)  # 字体设置，Windows系统可以在 "C:\Windows\Fonts" 下查找
-    font25 = ImageFont.truetype('/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf', 25)
-    font24 = ImageFont.truetype('/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf', 24)
+
+    # font25 = ImageFont.truetype('/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf', 25)
+    # font24 = ImageFont.truetype('/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf', 24)
     white_img = np.zeros((height, weight, 3), np.uint8)
     white_img.fill(255)
 
     video = None
     frame = None
     
-    # model 
+    # 加载模型model 
     model = LightNet(6)
-
 
     # 加载病例case
     load_case()
+    
+    # 加载字体
+    face=load_freetype()
 
 
     # 创建opencv主窗口
@@ -508,15 +546,15 @@ if __name__ == "__main__":
                 frame_count+=1
                 
                 # 运行一定时间后退出循环，以避免无限循环  
-                # if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
-                #     break 
+                if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
+                    break 
                     
                 
             
                 # 给帧添加文字信息
-                # start_in=time.time()
+                start_in=time.time()
                 frame = update_ui_info(frame)
-                # print(f'use:{(time.time()-start_in)*1000} ms')
+                print(f'use:{(time.time()-start_in)*1000} ms')
                 
                 cv2.imshow("image", frame)
                 key_value=cv2.waitKey(1)
@@ -552,10 +590,10 @@ if __name__ == "__main__":
            
 
 
-    # # 计算并打印估算的帧率  
-    # elapsed_time = time.time() - start_time  
-    # estimated_fps = frame_count / elapsed_time  
-    # print(f"input FPS: {estimated_fps:.2f} FRAMES:{frame_count}")
+    # 计算并打印估算的帧率  
+    elapsed_time = time.time() - start_time  
+    estimated_fps = frame_count / elapsed_time  
+    print(f"input FPS: {estimated_fps:.2f} FRAMES:{frame_count}")
 
 
         
