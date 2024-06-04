@@ -71,7 +71,7 @@ void captureFrames()
         }
         // auto end_in = std::chrono::high_resolution_clock::now();
         // std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_in - start_in);
-        //  std::cout << ms.count() << "ms\n";
+        // std::cout << ms.count() << "ms\n";
 
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::seconds second = std::chrono::duration_cast<std::chrono::seconds>(end - start);
@@ -93,7 +93,7 @@ void displayFrames()
 
     int frame_count = 0;
     auto start = std::chrono::high_resolution_clock::now();
-    int empyt_count=0;
+    int empyt_count = 0;
     while (!stopThreads)
     {
 
@@ -102,23 +102,27 @@ void displayFrames()
 
             cv::Mat frame = frameQueue.front();
             frameQueue.pop();
-            // auto start_in = std::chrono::high_resolution_clock::now();
             putText(frame, msg, cv::Point(100, 100), font, 30, cv::Scalar(0, 0, 255));
             // putText(frame, msg, cv::Point(700, 100), font, 30, cv::Scalar(255, 255, 255));
             // putText(frame, msg, cv::Point(100, 800), font, 30, cv::Scalar(255, 255, 255));
-            // auto end_in = std::chrono::high_resolution_clock::now();
-            // std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_in - start_in);
-            // std::cout << ms.count() << "ms\n";
+
             cv::imshow("Camera Feed", frame);
             frame_count++;
-            cv::waitKey(1);
+            std::cout << "show:" << frame_count << std::endl;
         }
         else
         {
-            // std::cout << "empty" << std::endl;
-            // std::cout << "empty:" << ++empyt_count << std::endl;
-            cv::waitKey(1);
+            empyt_count++;
+            std::cout << "out:" << empyt_count << std::endl;
         }
+
+        cv::waitKey(10);
+
+        // auto start_in = std::chrono::high_resolution_clock::now();
+        // // std::this_thread::sleep_for(std::chrono::milliseconds(5)); // 暂停5ms
+        // auto end_in = std::chrono::high_resolution_clock::now();
+        // std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_in - start_in);
+        // std::cout << ms.count() << "ms\n";
 
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::seconds second = std::chrono::duration_cast<std::chrono::seconds>(end - start);
