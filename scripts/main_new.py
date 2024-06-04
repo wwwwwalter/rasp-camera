@@ -63,7 +63,7 @@ def img_resize(image):
 
 # 使用算法处理帧
 def handle_AI(frame):
-    # frame = img_resize(frame)
+    # start_in=time.time()
     frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25, interpolation=cv2.INTER_NEAREST)
     global assistant_flag,disease_probability_info,report_simplified_info,treatment_simplified_info,disease_category_name
     if assistant_flag:
@@ -90,6 +90,8 @@ def handle_AI(frame):
 
     global handle_AI_flag
     handle_AI_flag = False
+    
+    # print(f'use:{(time.time()-start_in)*1000} ms')
     # 控制抽帧的频率
     time.sleep(3)
 
@@ -512,10 +514,13 @@ if __name__ == "__main__":
                 
             
                 # 给帧添加文字信息
+                # start_in=time.time()
                 frame = update_ui_info(frame)
+                # print(f'use:{(time.time()-start_in)*1000} ms')
+                
                 cv2.imshow("image", frame)
                 key_value=cv2.waitKey(1)
-                
+   
                 if key_value == -1:
                     pass
                 else:
@@ -558,10 +563,3 @@ if __name__ == "__main__":
     if video:
         video.release()
     cv2.destroyAllWindows()
-# 可能疾病为：
-# 耵聍栓塞 30.77%
-# 耳膜穿孔 29.10%
-# 外耳道炎 10.65%
-# 耵聍结石 10.26%
-# 油耳 9.80%
-# 耳结石 9.42%
