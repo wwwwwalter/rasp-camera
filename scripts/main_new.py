@@ -123,6 +123,7 @@ def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255), th
 
         # 将bitmap转换为OpenCV可以识别的格式  
         glyph_image = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)  
+        
         # 去除边缘，第二个参数阈值
         _, glyph_image_binary = cv2.threshold(glyph_image, 100, 255, cv2.THRESH_BINARY)
 

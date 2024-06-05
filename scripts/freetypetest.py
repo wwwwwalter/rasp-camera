@@ -20,67 +20,71 @@ def draw_chinese_text(image, text, position, font_path, font_size, color=(0, 0, 
     
   
     # 绘制文本  
-    x, y = position  
-    start_in = time.time()
+    x, y = position 
+    print(x)
+    print(y) 
+
     for char in text:  
         
         face.load_char(char)  
         
         bitmap = face.glyph.bitmap  
         left = face.glyph.bitmap_left  
-        top = face.glyph.bitmap_top  
+        top = face.glyph.bitmap_top
+        print(f'\n')
+        print(f'char:{char}')  
+        print(f'top:{top}')
+        print(f'left{left}')
+        print(f'width:{bitmap.width}')
+        print(f'rows:{bitmap.rows}')
 
-        # 将bitmap转换为OpenCV可以识别的格式  
-        glyph_image = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)  
-        # 去除边缘
-        _, glyph_image_binary = cv2.threshold(glyph_image, 127, 255, cv2.THRESH_BINARY)
+        # 将bitmap转换为OpenCV可以识别的格式,当通道灰度图 
+        gray_image = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)
 
-          
-
-        # cv2.RETR_EXTERNAL: 只检索最外层的轮廓。
-        # cv2.RETR_LIST: 检索所有的轮廓，并将其保存到列表中，不建立父子关系。
-        # cv2.RETR_CCOMP: 检索所有的轮廓，并将它们组织为两层的层次结构：顶层是外部边界，第二层是边界内的孔。
-        # cv2.RETR_TREE: 检索所有的轮廓，并重建嵌套轮廓的完整层次结构。
+        # 将单通道图像转换为三通道图像  
+        bgr_image = cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR)
         
-        # cv2.CHAIN_APPROX_NONE: 存储轮廓上的所有点。也就是说，它会保存轮廓上的每一个点，包括所有冗余的点。
-        # cv2.CHAIN_APPROX_SIMPLE: 仅保存轮廓的端点。对于垂直、水平和对角线分割，即轮廓上的线段只需要两个端点就可以定义，中间点不会被保存。这种方法可以大大减少存储的数据量，并且对于后续的轮廓处理（如绘制、填充等）也更加高效。
+        # 创建一个与原图像相同大小的零数组  
+        zeros = np.zeros(bgr_image.shape[:2], dtype=bgr_image.dtype)  
+        bgr_image[:, :, 0] = zeros  
+        bgr_image[:, :, 1] = zeros 
+        
+        print(f'shape:{bgr_image.shape[:2]}')
+        
         
 
-        # 找到非零（即前景）像素的坐标 
-        contours, hierarchy = cv2.findContours(glyph_image_binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+
+        start_in = time.time()
         
-
-        # cv2.drawContours(image, contours, -1, (0, 0, 255), 1,hierarchy=hierarchy,maxLevel=1)
-        # cv2.drawContours(image, contours, -1, color, 1, hierarchy=hierarchy, maxLevel=3, offset=(x + left, y - top))  
-
-        cv2.drawContours(image, contours, -1, color, -1, offset=(x + left, y - top)) 
-
+        image[y - top : y - top + bitmap.rows, x - left : x - left + bitmap.width]=bgr_image
         
+        print(f'use:{(time.time()-start_in)*1000}ms')
+
+
         x += face.glyph.advance.x >> 6  
-    print(f'use:{(time.time()-start_in)*1000}ms') 
+
     return image  
 
 
 
-    # 创建opencv主窗口
-# cv2.namedWindow("debug",cv2.WINDOW_KEEPRATIO)
-# cv2.namedWindow('Text', cv2.WINDOW_KEEPRATIO) 
-
+# cv2.namedWindow("image",cv2.WINDOW_FREERATIO)
+# cv2.setWindowProperty("image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
 #字体路径
 font_path='/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf'
 
 # 示例图片路径
-image_path = 'capture.jpg'  
+image_path = './scripts/stack.jpg'  
 
 # 加载图片  
 image = cv2.imread(image_path)  
 
 # 在图片上绘制中文字符  
-image_with_text = draw_chinese_text(image, 'hello,world', (50, 50), font_path, 30)  
+image_with_text = draw_chinese_text(image, 'hello.。', (5, 40), font_path, 40)  
 # 显示图片  
-cv2.imshow('Text', image)  
-cv2.waitKey(5*1000)  
+cv2.imshow('image', image_with_text)  
+cv2.waitKey(10*1000)  
 
 
 
