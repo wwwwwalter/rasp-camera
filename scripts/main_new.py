@@ -443,6 +443,13 @@ def handle_pdf():
     pdf_count+=1
 
 
+def handle_videowriter(frame):
+    
+    pass
+    
+
+
+
 # 加载病例json文件
 all_case_info_dict={}
 disease_category_name=[]
@@ -580,6 +587,9 @@ if __name__ == "__main__":
                         
                         handlePdf = threading.Timer(0,handle_pdf)
                         handlePdf.start()
+                    elif key_value == 52: # 保存视频
+                        handleVideoWriter = threading.Timer(0,handle_videowriter,(frame,))
+                        handleVideoWriter.start()
                 
                 
         else:
