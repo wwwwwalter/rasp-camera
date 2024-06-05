@@ -198,7 +198,7 @@ def init_camera():
         camera_status = True
         
         
-        video.set(cv2.CAP_PROP_FRAME_WIDTH, weight)
+        video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         video.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         video.set(cv2.CAP_PROP_FPS,30)
         
@@ -453,7 +453,8 @@ def handle_pdf():
 
 
 def handle_videowriter(frame):
-    
+    global writer
+    writer.write(frame)
     pass
     
 
@@ -499,19 +500,20 @@ if __name__ == "__main__":
     report_simplified_info=""       # 精简报告信息
     treatment_simplified_info=""    # 精简版建议
 
-    weight = 1920
+    width = 1920
     height = 1080
     
     camera_status = False
     assistant_flag = False
     handle_AI_flag = False
+    video_write_flag = False
     
 
 
 
     # font25 = ImageFont.truetype('/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf', 25)
     # font24 = ImageFont.truetype('/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf', 24)
-    white_img = np.zeros((height, weight, 3), np.uint8)
+    white_img = np.zeros((height, width, 3), np.uint8)
     white_img.fill(255)
 
     video = None
@@ -525,6 +527,12 @@ if __name__ == "__main__":
     
     # 加载字体
     face=load_freetype()
+
+    # 保存视频
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  
+    writer = cv2.VideoWriter('output/video/output.mp4', fourcc, 30, (width, height)) 
+
+
 
 
     # 创建opencv主窗口
@@ -546,6 +554,11 @@ if __name__ == "__main__":
                 camera_status = False
                 
             else:
+                # 保存视频
+                # 定义视频编码器和创建VideoWriter对象
+                if video_write_flag:
+                    writer.write(frame)
+
                 # 如果AI被打开
                 if(not handle_AI_flag) and assistant_flag:
                     # 每隔一段时间抽取一帧进行AI计算
@@ -563,13 +576,16 @@ if __name__ == "__main__":
                 # 运行一定时间后退出循环，以避免无限循环  
                 if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
                     break 
+
+
+
                     
                 
             
                 # 给帧添加文字信息
-                start_in=time.time()
+                # start_in=time.time()
                 frame = update_ui_info(frame)
-                print(f'use:{(time.time()-start_in)*1000} ms')
+                # print(f'use:{(time.time()-start_in)*1000} ms')
                 
                 cv2.imshow("image", frame)
                 key_value=cv2.waitKey(1)
@@ -597,8 +613,24 @@ if __name__ == "__main__":
                         handlePdf = threading.Timer(0,handle_pdf)
                         handlePdf.start()
                     elif key_value == 52: # 保存视频
-                        handleVideoWriter = threading.Timer(0,handle_videowriter,(frame,))
-                        handleVideoWriter.start()
+                        video_write_flag = not video_write_flag
+                        if video_write_flag:
+                            if writer:
+                                writer.release()
+                                print('release')
+                            now = int(time.time())
+                            timeArray = time.localtime(now)
+                            nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
+                            year,month,day = nowtime_str.split('-')[:3]
+                            video_path = "output/video/%s/%s/%s/nowtime_str" % (year,month,day) +".mp4"
+                            print(video_path)
+                            writer=cv2.VideoWriter(video_path, fourcc, 30, (width, height))
+                            print('save video')
+                        else:
+                            writer.release()
+                            print('stop save video')
+                
+
                 
                 
         else:
@@ -618,4 +650,6 @@ if __name__ == "__main__":
                 
     if video:
         video.release()
+    if writer:
+        writer.release()
     cv2.destroyAllWindows()
