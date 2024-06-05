@@ -73,13 +73,13 @@ void captureFrames()
         // std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_in - start_in);
         // std::cout << ms.count() << "ms\n";
 
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::seconds second = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-        if (second.count() >= 20)
-        {
-            std::cout << "capture FPS:" << frame_count / second.count() << std::endl;
-            break;
-        }
+        // auto end = std::chrono::high_resolution_clock::now();
+        // std::chrono::seconds second = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+        // if (second.count() >= 20)
+        // {
+        //     std::cout << "capture FPS:" << frame_count / second.count() << std::endl;
+        //     break;
+        // }
     }
     cap.release();
 }
@@ -130,13 +130,13 @@ void displayFrames()
         // std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_in - start_in);
         // std::cout << ms.count() << "ms\n";
 
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::seconds second = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-        if (second.count() >= 20)
-        {
-            std::cout << "display FPS:" << frame_count / second.count() << std::endl;
-            break;
-        }
+        // auto end = std::chrono::high_resolution_clock::now();
+        // std::chrono::seconds second = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+        // if (second.count() >= 20)
+        // {
+        //     std::cout << "display FPS:" << frame_count / second.count() << std::endl;
+        //     break;
+        // }
     }
 }
 
