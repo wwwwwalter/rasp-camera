@@ -21,6 +21,6 @@ find_package(Freetype REQUIRED)
 
 
 
-add_executable(main main.cpp cvxFont.cpp)
+add_executable(main main.cpp cvxFont.cpp decode.cpp)
 
 target_link_libraries(main ${OpenCV_LIBS}  Freetype::Freetype spdlog::spdlog)
