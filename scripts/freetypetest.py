@@ -3,17 +3,6 @@ import numpy as np
 import freetype  
 import time
 def draw_chinese_text(image, text, position, font_path, font_size, color=(0, 0, 255), thickness=-1):  
-    """  
-    在给定的图片上绘制中文字符。  
-      
-    :param image: OpenCV图像对象  
-    :param text: 要绘制的文本  
-    :param position: 文本的起始位置 (x, y)  
-    :param font_path: 字体文件的路径（例如：'simhei.ttf'）  
-    :param font_size: 字体大小  
-    :param color: 字体颜色，默认为白色  
-    :param thickness: 线条粗细，-1表示填充，默认为-1  
-    """  
     # 加载字体  
     face = freetype.Face(font_path)  
     face.set_char_size(font_size*64)  # 设置字体大小  
@@ -21,48 +10,44 @@ def draw_chinese_text(image, text, position, font_path, font_size, color=(0, 0, 
   
     # 绘制文本  
     x, y = position 
-    print(x)
-    print(y) 
 
-    for char in text:  
-        
-        face.load_char(char)  
-        
+
+    for char in text:
+        if char == '\n':  
+            x = position[0]  
+            y += font_size  
+            continue
+        face.load_char(char)    
         bitmap = face.glyph.bitmap  
         left = face.glyph.bitmap_left  
         top = face.glyph.bitmap_top
-        print(f'\n')
-        print(f'char:{char}')  
-        print(f'top:{top}')
-        print(f'left{left}')
-        print(f'width:{bitmap.width}')
-        print(f'rows:{bitmap.rows}')
 
         # 将bitmap转换为OpenCV可以识别的格式,当通道灰度图 
         gray_image = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)
 
-        # 将单通道图像转换为三通道图像  
-        bgr_image = cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR)
+        # 创建一个与原图像相同大小的零数组（三通道）  
+        bgr_image = np.zeros((bitmap.rows, bitmap.width, 3), dtype=np.uint8)  
         
-        # 创建一个与原图像相同大小的零数组  
-        zeros = np.zeros(bgr_image.shape[:2], dtype=bgr_image.dtype)  
-        bgr_image[:, :, 0] = zeros  
-        bgr_image[:, :, 1] = zeros 
-        
-        print(f'shape:{bgr_image.shape[:2]}')
-        
-        
+        # 将灰度图像复制到新图像的红色通道  
+        bgr_image[:, :, 2] = gray_image 
 
+        mask=gray_image!=0
 
 
         start_in = time.time()
         
-        image[y - top : y - top + bitmap.rows, x - left : x - left + bitmap.width]=bgr_image
+        image[y - top : y - top + bitmap.rows, x  : x + bitmap.width][mask]=bgr_image[mask]
+
+        # image[y - top : y - top + bitmap.rows, x  : x + bitmap.width]=bgr_image
+
+
+
         
         print(f'use:{(time.time()-start_in)*1000}ms')
 
 
         x += face.glyph.advance.x >> 6  
+       
 
     return image  
 

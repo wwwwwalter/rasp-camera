@@ -103,37 +103,45 @@ def load_freetype():
     face=freetype.Face(font_path)
     face.set_char_size(font_size*64)
     return face
+
+
+
     
 def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255), thickness=-1):  
     global face
     face.set_char_size(font_size*64)
     x, y = position  
     for char in text:
-        if char=='\n':
-            # 回车
-            x=position[0]
-            # 换行
-            y=y+35 # 行间距
+        if char == '\n':  
+            x = position[0]  
+            y += font_size+5  
             continue
-        face.load_char(char)  
-        
+        face.load_char(char)    
         bitmap = face.glyph.bitmap  
-        left = face.glyph.bitmap_left  
-        top = face.glyph.bitmap_top  
+        # left = face.glyph.bitmap_left  
+        top = face.glyph.bitmap_top
 
-        # 将bitmap转换为OpenCV可以识别的格式  
-        glyph_image = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)  
+        # 将bitmap转换为OpenCV可以识别的格式,当通道灰度图 
+        gray_image = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)
+
+        # 创建一个与原图像相同大小的零数组（三通道）  
+        bgr_image = np.zeros((bitmap.rows, bitmap.width, 3), dtype=np.uint8)
         
-        # 去除边缘，第二个参数阈值
-        _, glyph_image_binary = cv2.threshold(glyph_image, 100, 255, cv2.THRESH_BINARY)
+        # 将灰度图像复制到新图像的指定通道
+        if color==(0,0,255):  
+            bgr_image[:, :, 2] = gray_image
+        elif color==(0,255,0):
+            bgr_image[:, :, 1] = gray_image
+        else:
+            bgr_image[:, :, 0] = gray_image 
 
+        # 没有黑底
+        # mask=gray_image!=0
+        # image[y - top : y - top + bitmap.rows, x  : x + bitmap.width][mask]=bgr_image[mask]
 
+        # 有黑底
+        image[y - top : y - top + bitmap.rows, x  : x + bitmap.width]=bgr_image
 
-        # 找到非零（即前景）像素的坐标 
-        contours, hierarchy = cv2.findContours(glyph_image_binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        cv2.drawContours(image, contours, -1, color, -1, cv2.LINE_AA, offset=(x + left, y - top)) 
-
-        
         x += face.glyph.advance.x >> 6  
 
 
@@ -552,9 +560,9 @@ if __name__ == "__main__":
                     
                 frame_count+=1
                 
-                # # 运行一定时间后退出循环，以避免无限循环  
-                # if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
-                #     break 
+                # 运行一定时间后退出循环，以避免无限循环  
+                if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
+                    break 
                     
                 
             
