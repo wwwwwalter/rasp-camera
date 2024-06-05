@@ -124,14 +124,13 @@ def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255), th
         # 将bitmap转换为OpenCV可以识别的格式  
         glyph_image = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)  
         # 去除边缘，第二个参数阈值
-        _, glyph_image_binary = cv2.threshold(glyph_image, 50, 255, cv2.THRESH_BINARY)
+        _, glyph_image_binary = cv2.threshold(glyph_image, 100, 255, cv2.THRESH_BINARY)
+
 
 
         # 找到非零（即前景）像素的坐标 
         contours, hierarchy = cv2.findContours(glyph_image_binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        
-
-        cv2.drawContours(image, contours, -1, color, -1, offset=(x + left, y - top)) 
+        cv2.drawContours(image, contours, -1, color, -1, cv2.LINE_AA, offset=(x + left, y - top)) 
 
         
         x += face.glyph.advance.x >> 6  
@@ -164,7 +163,7 @@ def update_ui_info(frame):
             chunk_size = 16  
             chunks = [report_simplified[i:i+chunk_size] for i in range(0, len(report_simplified), chunk_size)]  
             multi_line_string = "\n".join(chunks)
-            # draw_chinese_text(frame,multi_line_string,(1500,700),font_size=25,color=(0,0,255))
+            draw_chinese_text(frame,multi_line_string,(1500,700),font_size=25,color=(0,0,255))
         
     # 相机离线
     else:
@@ -545,9 +544,9 @@ if __name__ == "__main__":
                     
                 frame_count+=1
                 
-                # 运行一定时间后退出循环，以避免无限循环  
-                if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
-                    break 
+                # # 运行一定时间后退出循环，以避免无限循环  
+                # if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
+                #     break 
                     
                 
             
