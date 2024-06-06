@@ -106,7 +106,7 @@ def load_freetype():
 
 
 
-    
+
 def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255), thickness=-1):  
     global face
     face.set_char_size(font_size*64)
@@ -135,13 +135,9 @@ def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255), th
         else:
             bgr_image[:, :, 0] = gray_image 
 
-        # 没有黑底
-        # mask=gray_image!=0
-        # image[y - top : y - top + bitmap.rows, x  : x + bitmap.width][mask]=bgr_image[mask]
-
-        # 有黑底
+        # 有黑底,处理速度比no_background稍快
         image[y - top : y - top + bitmap.rows, x  : x + bitmap.width]=bgr_image
-
+        # 自宽步进
         x += face.glyph.advance.x >> 6  
 
 
@@ -173,12 +169,10 @@ def draw_chinese_text_no_background(image, text, position, font_size=30, color=(
         else:
             bgr_image[:, :, 0] = gray_image 
 
-        # 没有黑底
+        # 没有黑底,但处理速度稍慢
         mask=gray_image!=0
         image[y - top : y - top + bitmap.rows, x  : x + bitmap.width][mask]=bgr_image[mask]
-
-
-
+        # 字宽步进
         x += face.glyph.advance.x >> 6  
 
 
