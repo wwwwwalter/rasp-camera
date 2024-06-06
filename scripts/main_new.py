@@ -8,10 +8,43 @@ import threading
 import freetype
 import numpy as np
 import sklearn.metrics as mr
-from networks import LightNet
 from PIL import Image, ImageDraw, ImageFont
 from weasyprint import HTML, CSS
 from bs4 import BeautifulSoup
+import torch.nn as nn
+import torch.nn.functional as Fun
+
+class LightNet(nn.Module):
+    def __init__(self, category_num):
+        super(LightNet, self).__init__()
+        
+        self.feture_extracter = nn.Sequential(
+            nn.Conv2d(in_channels=1,out_channels=16,kernel_size=3,stride=1,padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2,stride=2),
+
+            nn.Conv2d(in_channels=16,out_channels=32,kernel_size=3,stride=1,padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2,stride=2),
+
+            nn.Conv2d(in_channels=32,out_channels=64,kernel_size=3,stride=1,padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+           
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(in_features = 514560,out_features = 128),
+            nn.ReLU(),
+            nn.Linear(in_features = 128,out_features = category_num),
+            nn.Softmax(dim=1)
+        )
+        
+    def forward(self,target_input):
+        feature = self.feture_extracter(target_input)
+        res = self.classifier(feature)
+        return res
+
 
 
 
@@ -97,7 +130,7 @@ def handle_AI(frame):
     time.sleep(3)
 
 def load_freetype():
-    font_path='/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf'
+    font_path='fonts/Noto.ttf'
     font_size=30
     # 加载字体
     face=freetype.Face(font_path)
@@ -555,12 +588,12 @@ def handle_videowriter():
     writer=cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
     print('start save')
     
-    # 如果不点击停止保存，这里设定10s后自动停止保存
-    time.sleep(10)
-    if writer is not None:
-        print('auto stop')
-        writer.release()
-        writer = None
+    # # 如果不点击停止保存，这里设定10s后自动停止保存
+    # time.sleep(10)
+    # if writer is not None:
+    #     print('auto stop')
+    #     writer.release()
+    #     writer = None
         
     
     
@@ -643,6 +676,7 @@ if __name__ == "__main__":
     frame_width = width  
     frame_height = height
     writer = None  # 初始时不打开文件
+    video_frame_count=0 #记录写入视频的帧数
 
 
 
@@ -670,7 +704,14 @@ if __name__ == "__main__":
                 if writer is not None:
                     start_in=time.time()
                     writer.write(frame)
-                    print(f'use:{(time.time()-start_in)*1000} ms')
+                    video_frame_count+=1
+                    # 指定保存的帧数
+                    if video_frame_count >= 100:
+                        writer.release()
+                        writer=None
+                        print('auto stop writer')
+                        video_frame_count=0
+
 
                 # 如果AI被打开
                 if(not handle_AI_flag) and assistant_flag:
@@ -725,9 +766,23 @@ if __name__ == "__main__":
                         handlePdf = threading.Timer(0,handle_pdf)
                         handlePdf.start()
                     elif key_value == 52: # 保存视频
-                        handleVideoWriter = threading.Timer(0,handle_videowriter)
-                        handleVideoWriter.start()
-                        
+                        # handleVideoWriter = threading.Timer(0,handle_videowriter)
+                        # handleVideoWriter.start()
+                        if writer is not None:
+                            print('saving')
+                        else:
+                            now = int(time.time())
+                            timeArray = time.localtime(now)
+                            nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
+                            year,month,day = nowtime_str.split('-')[:3]
+                            video_path = "output/video/%s/%s/%s" % (year,month,day)
+                            video_file = f"output/video/{year}/{month}/{day}/{nowtime_str}.mp4"
+                            if not check_path_isexist(video_path):
+                                os.makedirs(video_path)
+                            print(video_file)
+                            writer=cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
+                            print('start save')
+                                            
 
                 
 
