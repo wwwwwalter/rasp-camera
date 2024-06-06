@@ -145,6 +145,42 @@ def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255), th
         x += face.glyph.advance.x >> 6  
 
 
+def draw_chinese_text_no_background(image, text, position, font_size=30, color=(0, 0, 255), thickness=-1):  
+    global face
+    face.set_char_size(font_size*64)
+    x, y = position  
+    for char in text:
+        if char == '\n':  
+            x = position[0]  
+            y += font_size+5  
+            continue
+        face.load_char(char)    
+        bitmap = face.glyph.bitmap  
+        # left = face.glyph.bitmap_left  
+        top = face.glyph.bitmap_top
+
+        # 将bitmap转换为OpenCV可以识别的格式,当通道灰度图 
+        gray_image = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)
+
+        # 创建一个与原图像相同大小的零数组（三通道）  
+        bgr_image = np.zeros((bitmap.rows, bitmap.width, 3), dtype=np.uint8)
+        
+        # 将灰度图像复制到新图像的指定通道
+        if color==(0,0,255):  
+            bgr_image[:, :, 2] = gray_image
+        elif color==(0,255,0):
+            bgr_image[:, :, 1] = gray_image
+        else:
+            bgr_image[:, :, 0] = gray_image 
+
+        # 没有黑底
+        mask=gray_image!=0
+        image[y - top : y - top + bitmap.rows, x  : x + bitmap.width][mask]=bgr_image[mask]
+
+
+
+        x += face.glyph.advance.x >> 6  
+
 
 def update_ui_info(frame):
 
@@ -158,6 +194,7 @@ def update_ui_info(frame):
         menu_info = "AI辅助诊断:%s\n已采集图像:%2d张\n已生成报告:%2d份\n" % ("开启" if assistant_flag else "关闭",capture_count,pdf_count)
         draw_chinese_text(frame,menu_info,(50,900),font_size=30,color=(0,255,0))
         
+        # AI信息
         if assistant_flag:
             # 右上：显示概率
             global disease_probability_info
@@ -173,6 +210,11 @@ def update_ui_info(frame):
             chunks = [report_simplified[i:i+chunk_size] for i in range(0, len(report_simplified), chunk_size)]  
             multi_line_string = "\n".join(chunks)
             draw_chinese_text(frame,multi_line_string,(1500,700),font_size=25,color=(0,0,255))
+        
+        # pdf生成状态
+        if pdf_gen_flag:
+            pdf_info="正在生成报告，请稍等..."
+            draw_chinese_text_no_background(frame,pdf_info,(750,540),font_size=30,color=(0,0,255))
         
     # 相机离线
     else:
@@ -228,6 +270,25 @@ def get_latest_jpg_file(directory):
   
     # 遍历指定目录下的所有.jpg文件  
     for filename in glob.glob(os.path.join(directory, '*.jpg')):  
+        if os.path.isfile(filename):  # 确保是一个文件，而不是目录  
+            # 获取文件的修改时间  
+            file_time = os.path.getmtime(filename)  
+  
+            # 如果当前文件的修改时间比已知的最新文件时间更新，则更新最新文件信息  
+            if file_time > latest_file_time:  
+                latest_file_time = file_time  
+                latest_file = filename
+  
+    return latest_file
+
+# 获取当天保存报告目录中最新的一份报告的名称
+def get_latest_pdf_file(directory):  
+    # 初始化最新文件的信息
+    latest_file = None
+    latest_file_time = 0  
+  
+    # 遍历指定目录下的所有.jpg文件  
+    for filename in glob.glob(os.path.join(directory, '*.pdf')):  
         if os.path.isfile(filename):  # 确保是一个文件，而不是目录  
             # 获取文件的修改时间  
             file_time = os.path.getmtime(filename)  
@@ -296,7 +357,7 @@ def handle_capture(frame):
 # 生成pdf文件并保存
 def handle_pdf():
     print('handle_pdf')
-    global pdf_count,capture_count
+    global pdf_count,capture_count,pdf_gen_flag
     # 如果本次开机没有捕获照片，则不生成pdf报告
     if capture_count == 0:
         return
@@ -311,6 +372,40 @@ def handle_pdf():
     
     if not check_path_isexist(pdf_path):
         os.makedirs(pdf_path)
+        
+        
+        
+    # 获取pdf目录中最新的报告名称,用以查重防止重复生成同一份报告
+    latest_pdf_file = get_latest_pdf_file(pdf_path)
+    if latest_pdf_file is None:
+        latest_pdf_file_name=None
+    else:
+        latest_pdf_file_name,_=os.path.splitext(os.path.basename(latest_pdf_file))
+        
+    print(f'latest_pdf_file_name:{latest_pdf_file_name}')
+    
+    
+    
+    
+        
+        
+    # 获取当天capture目录中保存的最新一张照片，用于生成pdf文件
+    latest_jpg_file = get_latest_jpg_file(capture_path)
+    if latest_jpg_file is None:
+        latest_jpg_file_name=None
+        return
+    else:
+        latest_jpg_file_name,_=os.path.splitext(os.path.basename(latest_jpg_file))
+    
+    
+    print(f'latest_jpg_file_name:{latest_jpg_file_name}')
+    
+    # 如果最新的照片已经生成报告，则不再重复生成
+    if latest_pdf_file_name == latest_jpg_file_name:
+        print(f'pdf already exist')
+        return
+        
+    
     
     # 获取当天dataset目录中保存的最新一张照片，用于生成pdf文件
     latest_dataset_jpg_file = get_latest_jpg_file(dataset_path)
@@ -319,18 +414,14 @@ def handle_pdf():
     else:
         return
     
-    # 获取当天capture目录中保存的最新一张照片，用于生成pdf文件
-    latest_jpg_file = get_latest_jpg_file(capture_path)
-    if latest_jpg_file:
-        pass
-    else:
-        return
+
     
     # 生成pdf文件名和保存路径
     pdf_file_name=replace_extension(os.path.basename(latest_jpg_file),'pdf')
     pdf_file_path = pdf_path + "/" + pdf_file_name 
 
-
+    # 到这里把pdf_gen_flag打开，在UI上显示正在生成报告文字
+    pdf_gen_flag=True
 
     # 读取最新一张图片，参数0表示以灰度模式读取，参数1表示以彩色模式读取  
     img = cv2.imread(latest_jpg_file, 1)  
@@ -450,6 +541,7 @@ def handle_pdf():
     print(f'save pdf: {pdf_file_path}')
     # 更新pdf张书
     pdf_count+=1
+    pdf_gen_flag=False
 
 
 def handle_videowriter():
@@ -528,6 +620,7 @@ if __name__ == "__main__":
     assistant_flag = False
     handle_AI_flag = False
     video_write_flag = False
+    pdf_gen_flag = False
     
 
 
@@ -599,9 +692,9 @@ if __name__ == "__main__":
                     
                 frame_count+=1
                 
-                # 运行一定时间后退出循环，以避免无限循环  
-                if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
-                    break 
+                # # 运行一定时间后退出循环，以避免无限循环  
+                # if (time.time() - start_time) > 20:  # 例如，运行10秒钟  
+                #     break 
 
 
 
@@ -635,7 +728,6 @@ if __name__ == "__main__":
                         handleCapture.start()
                         
                     elif key_value == 103 or key_value==51:# 生成pdf文件
-                        
                         handlePdf = threading.Timer(0,handle_pdf)
                         handlePdf.start()
                     elif key_value == 52: # 保存视频
