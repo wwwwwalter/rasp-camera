@@ -200,7 +200,7 @@ def init_camera():
         
         video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         video.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        video.set(cv2.CAP_PROP_FPS,30)
+        video.set(cv2.CAP_PROP_FPS,30.0)
         
         fps = video.get(cv2.CAP_PROP_FPS)
         size = (int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
@@ -266,7 +266,7 @@ def handle_capture(frame):
     capture_path = "output/capture/%s/%s/%s" % (year,month,day)
     dataset_path = "output/dataset/%s/%s/%s" % (year,month,day)
 
-    if camera_status and assistant_flag:
+    if camera_status:
         if not check_path_isexist(capture_path):
             os.makedirs(capture_path)
         if not check_path_isexist(dataset_path):
@@ -291,7 +291,7 @@ def handle_capture(frame):
         capture_count+=1
         
     else:
-        print("camera_status orassistant_flag is False!")
+        print("camera_status is False!")
 
 # 生成pdf文件并保存
 def handle_pdf():
@@ -452,10 +452,31 @@ def handle_pdf():
     pdf_count+=1
 
 
-def handle_videowriter(frame):
+def handle_videowriter():
     global writer
-    writer.write(frame)
-    pass
+    if writer is not None:
+        print('saving')
+        return
+    now = int(time.time())
+    timeArray = time.localtime(now)
+    nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
+    year,month,day = nowtime_str.split('-')[:3]
+    video_path = "output/video/%s/%s/%s" % (year,month,day)
+    video_file = f"output/video/{year}/{month}/{day}/{nowtime_str}.mp4"
+    if not check_path_isexist(video_path):
+        os.makedirs(video_path)
+    print(video_file)
+    writer=cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
+    print('start save')
+    
+    # 如果不点击停止保存，这里设定10s后自动停止保存
+    time.sleep(10)
+    if writer is not None:
+        print('auto stop')
+        writer.release()
+        writer = None
+        
+    
     
 
 
@@ -485,7 +506,7 @@ def load_case():
     # 病例名称种类个数
     disease_category_num = len(disease_category_name)
     print(disease_category_name)
-    print(disease_category_num)
+    # print(disease_category_num)
 
 
 
@@ -528,9 +549,13 @@ if __name__ == "__main__":
     # 加载字体
     face=load_freetype()
 
-    # 保存视频
+    # 初始化VideoWriter，但不设置输出文件（因为我们还不知道文件名）  
+    # 使用MJPG编解码器和适当的帧率、尺寸  
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  
-    writer = cv2.VideoWriter('output/video/output.mp4', fourcc, 30, (width, height)) 
+    fps = 30.0  
+    frame_width = width  
+    frame_height = height
+    writer = None  # 初始时不打开文件
 
 
 
@@ -555,9 +580,10 @@ if __name__ == "__main__":
                 
             else:
                 # 保存视频
-                # 定义视频编码器和创建VideoWriter对象
-                if video_write_flag:
+                if writer is not None:
+                    start_in=time.time()
                     writer.write(frame)
+                    print(f'use:{(time.time()-start_in)*1000} ms')
 
                 # 如果AI被打开
                 if(not handle_AI_flag) and assistant_flag:
@@ -613,22 +639,10 @@ if __name__ == "__main__":
                         handlePdf = threading.Timer(0,handle_pdf)
                         handlePdf.start()
                     elif key_value == 52: # 保存视频
-                        video_write_flag = not video_write_flag
-                        if video_write_flag:
-                            if writer:
-                                writer.release()
-                                print('release')
-                            now = int(time.time())
-                            timeArray = time.localtime(now)
-                            nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
-                            year,month,day = nowtime_str.split('-')[:3]
-                            video_path = "output/video/%s/%s/%s/nowtime_str" % (year,month,day) +".mp4"
-                            print(video_path)
-                            writer=cv2.VideoWriter(video_path, fourcc, 30, (width, height))
-                            print('save video')
-                        else:
-                            writer.release()
-                            print('stop save video')
+                        handleVideoWriter = threading.Timer(0,handle_videowriter)
+                        handleVideoWriter.start()
+                        
+
                 
 
                 
