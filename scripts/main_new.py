@@ -237,7 +237,7 @@ def update_ui_info(frame):
         
     # 相机离线
     else:
-        draw_chinese_text(frame,"请检查相机是否正常连接",(60,60),font_size=30,color=(0,255,0))
+        draw_chinese_text_no_background(frame,"请检查相机是否正常连接",(60,60),font_size=30,color=(0,255,0))
     
 
     return frame
@@ -357,7 +357,7 @@ def handle_capture(frame):
         
         
         # 裁切中心正方形,计算裁剪区域的左上角坐标  
-        start_x = (1920 - 1080) // 2 - 25
+        start_x = (1920 - 1080) // 2 - 40
         start_y = 0 
     
         # 进行裁剪  
@@ -644,7 +644,7 @@ if __name__ == "__main__":
 
 
     white_img = np.zeros((height, width, 3), np.uint8)
-    white_img.fill(255)
+    white_img.fill(0)
 
     video = None
     frame = None
@@ -685,7 +685,7 @@ if __name__ == "__main__":
                 ret, frame = video.read()
                 if (not ret) or (frame is None):
                     raise BaseException
-            except BaseException:
+            except:
                 camera_status = False
                 
             else:
