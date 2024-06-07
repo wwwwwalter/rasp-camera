@@ -7,12 +7,10 @@ import torch
 import threading
 import freetype
 import numpy as np
-import sklearn.metrics as mr
-from PIL import Image, ImageDraw, ImageFont
-from weasyprint import HTML, CSS
+from weasyprint import HTML
 from bs4 import BeautifulSoup
 import torch.nn as nn
-import torch.nn.functional as Fun
+
 
 class LightNet(nn.Module):
     def __init__(self, category_num):
@@ -52,14 +50,7 @@ class LightNet(nn.Module):
 def decimal_to_percentage(decimal_number, precision=2):
     return f"{decimal_number:.{precision}%}"
 
-def cv2ImgAddText(img, text, left, top, textColor=(0, 255, 0), textSize=20):
-    # 判断是否为opencv图片类型
-    if (isinstance(img, np.ndarray)):
-        img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    draw = ImageDraw.Draw(img)
-    fontText = ImageFont.truetype('simsun.ttc', textSize, encoding="utf-8")
-    draw.text((left, top), text, textColor, font=fontText)
-    return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+
 
 
 
@@ -122,12 +113,13 @@ def handle_AI(frame):
         report_simplified_info=""
         treatment_simplified_info=""
 
-    global handle_AI_flag
-    handle_AI_flag = False
+
     
     # print(f'use:{(time.time()-start_in)*1000} ms')
     # 控制抽帧的频率
-    time.sleep(3)
+    time.sleep(5)
+    global handle_AI_flag
+    handle_AI_flag = False
 
 def load_freetype():
     font_path='fonts/Noto.ttf'
@@ -140,7 +132,7 @@ def load_freetype():
 
 
 
-def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255), thickness=-1):  
+def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255)):  
     global face
     face.set_char_size(font_size*64)
     x, y = position  
@@ -174,7 +166,7 @@ def draw_chinese_text(image, text, position, font_size=30, color=(0, 0, 255), th
         x += face.glyph.advance.x >> 6  
 
 
-def draw_chinese_text_no_background(image, text, position, font_size=30, color=(0, 0, 255), thickness=-1):  
+def draw_chinese_text_no_background(image, text, position, font_size=30, color=(0, 0, 255)):  
     global face
     face.set_char_size(font_size*64)
     x, y = position  
@@ -225,7 +217,7 @@ def update_ui_info(frame):
         if assistant_flag:
             # 右上：显示概率
             global disease_probability_info
-            draw_chinese_text(frame,disease_probability_info,(1700,60),font_size=25,color=(0,0,255))
+            draw_chinese_text(frame,disease_probability_info,(1600,60),font_size=35,color=(0,255,0))
 
             
             # 右下：显示精简版报告和建议
@@ -236,12 +228,12 @@ def update_ui_info(frame):
             chunk_size = 16  
             chunks = [report_simplified[i:i+chunk_size] for i in range(0, len(report_simplified), chunk_size)]  
             multi_line_string = "\n".join(chunks)
-            draw_chinese_text(frame,multi_line_string,(1500,700),font_size=25,color=(0,0,255))
+            draw_chinese_text(frame,multi_line_string,(1435,700),font_size=30,color=(0,255,0))
         
         # pdf生成状态
         if pdf_gen_flag:
             pdf_info="正在生成报告，请稍等..."
-            draw_chinese_text_no_background(frame,pdf_info,(750,540),font_size=30,color=(0,0,255))
+            draw_chinese_text_no_background(frame,pdf_info,(750,540),font_size=40,color=(0,255,0))
         
     # 相机离线
     else:
@@ -493,7 +485,7 @@ def handle_pdf():
     
 
     # 指定 HTML 文件和输出的 PDF 文件名
-    html_file = 'scripts/html2pdf.html'
+    html_file = 'html/html2pdf.html'
 
 
     
@@ -605,7 +597,6 @@ all_case_info_dict={}
 disease_category_name=[]
 disease_category_num=0
 def load_case():
-    print('load case json file')
     global all_case_info_dict,disease_category_name,disease_category_num
     # 遍历case目录
     for filename in glob.glob(os.path.join('case', '*.json')): 
@@ -652,8 +643,6 @@ if __name__ == "__main__":
 
 
 
-    # font25 = ImageFont.truetype('/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf', 25)
-    # font24 = ImageFont.truetype('/usr/share/fonts/truetype/google/NotoSansCJKsc.ttf', 24)
     white_img = np.zeros((height, width, 3), np.uint8)
     white_img.fill(255)
 
