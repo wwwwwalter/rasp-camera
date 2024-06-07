@@ -702,17 +702,17 @@ if __name__ == "__main__":
                         video_frame_count=0
 
 
-                # 如果AI被打开
+                # 如果AI被打开,并且没有正在进行AI计算,则抽取一帧进行AI计算
                 if(not handle_AI_flag) and assistant_flag:
                     # 每隔一段时间抽取一帧进行AI计算
                     handleAI = threading.Timer(0,handle_AI,(frame,))
                     handleAI.start()
                     handle_AI_flag = True
                 
-                if not assistant_flag:
-                    disease_probability_info=""
-                    report_simplified_info=""
-                    treatment_simplified_info=""
+                # if not assistant_flag:
+                #     disease_probability_info=""
+                #     report_simplified_info=""
+                #     treatment_simplified_info=""
                     
                 frame_count+=1
                 
