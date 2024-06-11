@@ -4,6 +4,8 @@
 # pyinstaller
 dist/
 build/
+_internal/
+main_new
 
 # program
 output/
