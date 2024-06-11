@@ -1,5 +1,14 @@
-output/
+# vscode
+.vscode
+
+# pyinstaller
 dist/
 build/
-.vscode
+
+# program
+output/
+
+
+
+# cpp version
 cpp/build
