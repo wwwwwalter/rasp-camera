@@ -343,8 +343,11 @@ def handle_capture(frame):
     timeArray = time.localtime(now)
     nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
     year,month,day = nowtime_str.split('-')[:3]
-    capture_path = "output/capture/%s/%s/%s" % (year,month,day)
-    dataset_path = "output/dataset/%s/%s/%s" % (year,month,day)
+    # capture_path = "output/capture/%s/%s/%s" % (year,month,day)
+    # dataset_path = "output/dataset/%s/%s/%s" % (year,month,day)
+    
+    capture_path = "output/capture"
+    dataset_path = "output/dataset"
 
     if camera_status:
         if not check_path_isexist(capture_path):
@@ -384,9 +387,9 @@ def handle_pdf():
     timeArray = time.localtime(now)
     nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
     year,month,day = nowtime_str.split('-')[:3]
-    dataset_path = "output/dataset/%s/%s/%s" % (year,month,day)
-    capture_path = "output/capture/%s/%s/%s" % (year,month,day)
-    pdf_path="output/pdf/%s/%s/%s" % (year,month,day)
+    dataset_path = "output/dataset"
+    capture_path = "output/capture"
+    pdf_path="output/pdf"
     
     
     if not check_path_isexist(pdf_path):
@@ -572,8 +575,8 @@ def handle_videowriter():
     timeArray = time.localtime(now)
     nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
     year,month,day = nowtime_str.split('-')[:3]
-    video_path = "output/video/%s/%s/%s" % (year,month,day)
-    video_file = f"output/video/{year}/{month}/{day}/{nowtime_str}.mp4"
+    video_path = "output/video"
+    video_file = f"output/video/{nowtime_str}.mp4"
     if not check_path_isexist(video_path):
         os.makedirs(video_path)
     print(video_file)
@@ -764,8 +767,8 @@ if __name__ == "__main__":
                             timeArray = time.localtime(now)
                             nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
                             year,month,day = nowtime_str.split('-')[:3]
-                            video_path = "output/video/%s/%s/%s" % (year,month,day)
-                            video_file = f"output/video/{year}/{month}/{day}/{nowtime_str}.mp4"
+                            video_path = "output/video"
+                            video_file = f"output/video/{nowtime_str}.mp4"
                             if not check_path_isexist(video_path):
                                 os.makedirs(video_path)
                             print(video_file)
