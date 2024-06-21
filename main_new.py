@@ -100,10 +100,10 @@ def handle_AI(frame):
         name=disease_category_name[disease_probability_indx[0]]
         # 取最大概率精简报告
         name = all_case_info_dict[name][0]['名称']
-        report = all_case_info_dict[name][0]['检查结果']
-        reason = all_case_info_dict[name][0]['病因']
-        complication =  all_case_info_dict[name][0]['并发症']
-        treatment = all_case_info_dict[name][0]['治疗建议']
+        report = all_case_info_dict[name][0]['分析结果']
+        reason = all_case_info_dict[name][0]['原因']
+        complication =  all_case_info_dict[name][0]['影响']
+        treatment = all_case_info_dict[name][0]['康养建议']
         report_simplified_info = all_case_info_dict[name][0]['简化版结果']
         treatment_simplified_info = all_case_info_dict[name][0]['简化版建议']
         
@@ -225,10 +225,10 @@ def update_ui_info(frame):
             global treatment_simplified_info
             report_simplified = report_simplified_info + treatment_simplified_info
             # 使用join()和换行符来打印多行
-            chunk_size = 16  
+            chunk_size = 15  
             chunks = [report_simplified[i:i+chunk_size] for i in range(0, len(report_simplified), chunk_size)]  
             multi_line_string = "\n".join(chunks)
-            draw_chinese_text(frame,multi_line_string,(1435,700),font_size=30,color=(0,255,0))
+            draw_chinese_text(frame,multi_line_string,(1465,700),font_size=30,color=(0,255,0))
         
         # pdf生成状态
         if pdf_gen_flag:
@@ -464,10 +464,10 @@ def handle_pdf():
         name=disease_category_name[disease_probability_indx[0]]
         # 取最大概率报告
         name = all_case_info_dict[name][0]['名称']
-        report = all_case_info_dict[name][0]['检查结果']
-        reason = all_case_info_dict[name][0]['病因']
-        complication =  all_case_info_dict[name][0]['并发症']
-        treatment = all_case_info_dict[name][0]['治疗建议']
+        report = all_case_info_dict[name][0]['分析结果']
+        reason = all_case_info_dict[name][0]['原因']
+        complication =  all_case_info_dict[name][0]['影响']
+        treatment = all_case_info_dict[name][0]['康养建议']
         report_simplified = all_case_info_dict[name][0]['简化版结果']
         treatment_simplified = all_case_info_dict[name][0]['简化版建议']
         
@@ -522,24 +522,24 @@ def handle_pdf():
     div_result = soup.find('div',class_='div-result')
     # 创建4段文本
     paragraph_1 = soup.new_tag('h3')
-    paragraph_1.string='检查结果:'
+    paragraph_1.string='分析结果:'
     content_1 = soup.new_tag('p')
     content_1.string=report
     
     
     paragraph_2 = soup.new_tag('h3')
-    paragraph_2.string='病因:'
+    paragraph_2.string='原因:'
     content_2 = soup.new_tag('p')
     content_2.string=reason
     
     paragraph_3 = soup.new_tag('h3')
-    paragraph_3.string='并发症:'
+    paragraph_3.string='影响:'
     content_3 = soup.new_tag('p')
     content_3.string=complication
     
     
     paragraph_4 = soup.new_tag('h3')
-    paragraph_4.string='治疗建议:'
+    paragraph_4.string='康养建议:'
     content_4 = soup.new_tag('p')
     content_4.string=treatment
     
