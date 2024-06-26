@@ -774,7 +774,9 @@ if __name__ == "__main__":
                             print(video_file)
                             writer=cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
                             print('start save')
-                                            
+                    elif key_value == 48: # 清零拍照数量和pdf报告数量
+                        capture_count = 0
+                        pdf_count = 0
 
                 
 
