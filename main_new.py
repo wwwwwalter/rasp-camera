@@ -338,7 +338,7 @@ def replace_extension(filename, new_extension):
 # 保存图片
 def handle_capture(frame):
     print('handle_capture')
-    global capture_count
+    global capture_count,last_capture_pic_name
     now = int(time.time())
     timeArray = time.localtime(now)
     nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
@@ -372,6 +372,9 @@ def handle_capture(frame):
         print("save img " + nowtime_str + ".jpg on %s" % dataset_path)
         # 更新保存帧数
         capture_count+=1
+        # 更新最新照片名
+        last_capture_pic_name = nowtime_str+".jpg"
+        
         
     else:
         print("camera_status is False!")
@@ -379,10 +382,14 @@ def handle_capture(frame):
 # 生成pdf文件并保存
 def handle_pdf():
     print('handle_pdf')
-    global pdf_count,capture_count,pdf_gen_flag
-    # 如果本次开机没有捕获照片，则不生成pdf报告
+    global pdf_count,capture_count,pdf_gen_flag,last_capture_pic_name
+    # 如果本次开机没有捕获照片,或者被人为重置为0，则不生成pdf报告
     if capture_count == 0:
         return
+    # 如果最新的照片已经生成pdf报告了，怎不再重复生成
+    if last_capture_pic_name == "":
+        return
+    
     now = int(time.time())
     timeArray = time.localtime(now)
     nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
@@ -396,45 +403,18 @@ def handle_pdf():
         os.makedirs(pdf_path)
         
         
-        
-    # 获取pdf目录中最新的报告名称,用以查重防止重复生成同一份报告
-    latest_pdf_file = get_latest_pdf_file(pdf_path)
-    if latest_pdf_file is None:
-        latest_pdf_file_name=None
-    else:
-        latest_pdf_file_name,_=os.path.splitext(os.path.basename(latest_pdf_file))
-        
-    print(f'latest_pdf_file_name:{latest_pdf_file_name}')
-    
-    
-    
-    
-        
-        
     # 获取当天capture目录中保存的最新一张照片，用于生成pdf文件
-    latest_jpg_file = get_latest_jpg_file(capture_path)
-    if latest_jpg_file is None:
-        latest_jpg_file_name=None
-        return
-    else:
-        latest_jpg_file_name,_=os.path.splitext(os.path.basename(latest_jpg_file))
-    
-    
-    print(f'latest_jpg_file_name:{latest_jpg_file_name}')
-    
-    # 如果最新的照片已经生成报告，则不再重复生成
-    if latest_pdf_file_name == latest_jpg_file_name:
-        print(f'pdf already exist')
-        return
-        
-    
+    latest_jpg_file = capture_path+"/"+last_capture_pic_name
+    print(f'latest_jpg_file:{latest_jpg_file}')
+
     
     # 获取当天dataset目录中保存的最新一张照片，用于生成pdf文件
-    latest_dataset_jpg_file = get_latest_jpg_file(dataset_path)
-    if latest_dataset_jpg_file:
-        pass
-    else:
-        return
+    latest_dataset_jpg_file = dataset_path+"/"+last_capture_pic_name
+    print(f'latest_dataset_jpg_file:{latest_dataset_jpg_file}')
+    
+    
+    # 将最新照片记录清空，防止在生成报告的同时，再次按下按钮导致的重复生成同一份报告
+    last_capture_pic_name=""
     
 
     
@@ -627,6 +607,7 @@ if __name__ == "__main__":
     key_value=""
     capture_count=0
     pdf_count=0
+    last_capture_pic_name=""
     
     # 概率信息
     disease_probability_info=""
