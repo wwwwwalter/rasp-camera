@@ -338,7 +338,10 @@ def replace_extension(filename, new_extension):
 # 保存图片
 def handle_capture(frame):
     print('handle_capture')
-    global capture_count,last_capture_pic_name
+    global capture_count,last_capture_pic_name,pdf_gen_flag
+    # 如果正在生成pdf报告，则不允许截图保存照片
+    if pdf_gen_flag:
+        return
     now = int(time.time())
     timeArray = time.localtime(now)
     nowtime_str = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)
