@@ -5,6 +5,7 @@ import time
 import json  
 import torch
 import threading
+import subprocess
 import freetype
 import numpy as np
 from weasyprint import HTML
@@ -203,10 +204,34 @@ def draw_chinese_text_no_background(image, text, position, font_size=30, color=(
 
 def update_ui_info(frame):
 
-    global camera_status
+    global camera_status,setting_flag
     # 正常情况
     if camera_status:
-
+        
+        if setting_flag:
+            # 左上：相机设置菜单
+            global setting_menu_index
+            global brightness,contrast,saturation
+            global white_balance_temperature,white_balance_automatic
+            global exposure_time_absolute,auto_exposure
+            
+            # 分别定义每个参数的字符串
+            brightness_info = "%s明亮度[-64,0,64]：%d" % (">" if setting_menu_index==0 else "  ", brightness)
+            contrast_info = "%s对比度[0,32,64]：%d" % (">" if setting_menu_index==1 else "  ",contrast)
+            saturation_info = "%s饱和度[0,64,128]：%d" % (">" if setting_menu_index==2 else "  ",saturation)
+            white_balance_info = "%s白平衡[2800,4600,6500]：%d" % (">" if setting_menu_index==3 else "  ",white_balance_temperature)
+            exposure_info = "%s曝光度[1,157,5000]：%d" % (">" if setting_menu_index==4 else "  ",exposure_time_absolute)
+            auto_exposure_status = "%s自动曝光：%s" % (">" if setting_menu_index==5 else "  ", "ON" if auto_exposure == 3 else "OFF")
+            auto_white_balance_status = "%s自动白平衡：%s" % (">" if setting_menu_index==6 else "  ", "ON" if white_balance_automatic == 1 else "OFF")
+            
+            # camera_info = "明亮度[-64,64,0]：%d\n对比度[0,64,32]：%d\n饱和度[0,128,64]：%d\n白平衡[2800,6500,4600]：%d\n曝光度[1,5000,157]：%d\n自动曝光：%s\n自动白平衡：%s" % (brightness,contrast,saturation,white_balance_temperature,exposure_time_absolute, "ON" if auto_exposure==3 else "OFF","ON" if white_balance_automatic==1 else "OFF")
+            draw_chinese_text_no_background(frame,brightness_info,(50,100),font_size=30,color=(0,255,0))
+            draw_chinese_text_no_background(frame,contrast_info,(50,130),font_size=30,color=(0,255,0))
+            draw_chinese_text_no_background(frame,saturation_info,(50,160),font_size=30,color=(0,255,0))
+            draw_chinese_text_no_background(frame,white_balance_info,(50,190),font_size=30,color=(0,255,0))
+            draw_chinese_text_no_background(frame,exposure_info,(50,220),font_size=30,color=(0,255,0))
+            draw_chinese_text_no_background(frame,auto_exposure_status,(50,250),font_size=30,color=(0,255,0))
+            draw_chinese_text_no_background(frame,auto_white_balance_status,(50,280),font_size=30,color=(0,255,0))
         
         # 左下：显示菜单
         global menu_info,assistant_flag,capture_count,pdf_count
@@ -273,6 +298,9 @@ def init_camera():
         # 将FourCC转换为对应的字符  
         fourcc_char = chr((fourcc >> 0) & 0xFF) + chr((fourcc >> 8) & 0xFF) + chr((fourcc >> 16) & 0xFF) + chr((fourcc >> 24) & 0xFF)  
         print(f"Current FourCC: {fourcc_char}") 
+        
+        # 加载相机参数
+        load_camera_parameters()
 
 
 
@@ -603,6 +631,147 @@ def load_case():
     disease_category_num = len(disease_category_name)
     print(disease_category_name)
     # print(disease_category_num)
+    
+    
+# 获取相机参数
+def load_camera_parameters():
+    global brightness,contrast,saturation
+    global white_balance_temperature,white_balance_automatic
+    global exposure_time_absolute,auto_exposure 
+    # 优先加载配置文件
+    
+    # 如果没有就读取相机真实参数
+    try:
+        # 使用subprocess.check_output执行命令并获取输出
+        brightness = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=brightness", shell=True, text=True).strip().split(": ")[1])
+        contrast = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=contrast", shell=True, text=True).strip().split(": ")[1])
+        saturation = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=saturation", shell=True, text=True).strip().split(": ")[1])
+        white_balance_temperature = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=white_balance_temperature", shell=True, text=True).strip().split(": ")[1])
+        white_balance_automatic = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=white_balance_automatic", shell=True, text=True).strip().split(": ")[1])
+        exposure_time_absolute = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=exposure_time_absolute", shell=True, text=True).strip().split(": ")[1])
+        auto_exposure = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=auto_exposure", shell=True, text=True).strip().split(": ")[1].split(' ')[0])
+        
+        print(f'brightness:{brightness}')
+        print(f'contrast:{contrast}')
+        print(f'saturation:{saturation}')
+        print(f'white_balance_temperature:{white_balance_temperature}')
+        print(f'white_balance_automatic:{white_balance_automatic}')
+        print(f'exposure_time_absolute:{exposure_time_absolute}')
+        print(f'auto_exposure:{auto_exposure}')
+
+        
+
+    
+    except subprocess.CalledProcessError as e:
+        # 如果命令执行出错，打印错误信息
+        print(f"Error reading camera setting : {e}")
+
+
+
+# 保存相机参数
+def save_camera_parameters():
+    pass    
+    
+# 调节相机参数
+def adjust_camera_settings(index,value):
+    global brightness,contrast,saturation
+    global white_balance_temperature,white_balance_automatic
+    global exposure_time_absolute,auto_exposure 
+    try:
+        if index==0: # 亮度
+            if value==1:
+                brightness+=4
+            else:
+                brightness-=4
+                
+            if brightness<=-64:
+                brightness=-64
+            if brightness>=64:
+                brightness=64
+            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"brightness={brightness}"], check=True)
+        if index==1: # 对比度
+            if value==1:
+                contrast+=4
+            else:
+                contrast-=4
+            
+            if contrast<=0:
+                contrast==0
+            if contrast>=64:
+                contrast=64
+            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"contrast={contrast}"], check=True)
+        if index==2: # 饱和度
+            if value==1:
+                saturation+=4
+            else:
+                saturation-=4
+                
+            if saturation<=0:
+                saturation=0
+            if saturation>=128:
+                saturation=128
+            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"saturation={saturation}"], check=True)
+        if index==3: # 白平衡
+            # 关闭自动白平衡
+            white_balance_automatic=0
+            if value==1:
+                white_balance_temperature+=100
+            else:
+                white_balance_temperature-=100
+            if white_balance_temperature<=2800:
+                white_balance_temperature=2800
+            if white_balance_temperature>6500:
+                white_balance_temperature=6500
+            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"white_balance_automatic={white_balance_automatic}"], check=True)
+            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"white_balance_temperature={white_balance_temperature}"], check=True)
+            
+        if index==4: # 曝光度
+            # 关闭自动曝光，打开手动曝光
+            # min=0 max=3 default=3 value=3 (Aperture Priority Mode)
+            # 1: Manual Mode
+			# 3: Aperture Priority Mode
+            auto_exposure=1
+            
+            if value==1:
+                exposure_time_absolute+=100
+            else:
+                exposure_time_absolute-=100
+
+            if exposure_time_absolute<=0:
+                exposure_time_absolute=1
+            if exposure_time_absolute>=5000:
+                exposure_time_absolute=5000
+            
+            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"auto_exposure={auto_exposure}"], check=True)
+            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"exposure_time_absolute={exposure_time_absolute}"], check=True)
+                
+        if index==5: # 自动曝光
+            # min=0 max=3 default=3 value=3 (Aperture Priority Mode)
+            # 1: Manual Mode
+			# 3: Aperture Priority Mode
+            if value==1: # 切换到自动曝光
+                auto_exposure=3
+            else: # 切换到手动曝光
+                auto_exposure=1
+            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"auto_exposure={auto_exposure}"], check=True)
+            # 获取当前的曝光度，用于更新menu
+            exposure_time_absolute = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=exposure_time_absolute", shell=True, text=True).strip().split(": ")[1])
+
+        if index == 6: # 自动白平衡
+            
+            if value==1: # 切换到自动白平衡
+                white_balance_automatic=1
+            else: # 切换到手动白平衡
+                white_balance_automatic=0
+            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"white_balance_automatic={white_balance_automatic}"], check=True)
+            # 获取当前的白平衡,用于更新menu
+            white_balance_temperature = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=white_balance_temperature", shell=True, text=True).strip().split(": ")[1])
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error adjusting camera settings: {e}")
+        
+        
+        
 
 
 
@@ -617,6 +786,18 @@ if __name__ == "__main__":
     menu_info="" # 菜单信息
     report_simplified_info=""       # 精简报告信息
     treatment_simplified_info=""    # 精简版建议
+    
+    
+    setting_flag=False              # 相机设置开关
+    setting_menu_index=0            # 相机设置菜单索引
+
+    brightness=0                    # 亮度
+    contrast=0                      # 对比度
+    saturation=0                    # 饱和度
+    white_balance_temperature=0     # 白平衡
+    white_balance_automatic=0       # 自动白平衡
+    exposure_time_absolute=0        # 曝光时间
+    auto_exposure=0                 # 自动曝光
 
     width = 1920
     height = 1080
@@ -762,7 +943,30 @@ if __name__ == "__main__":
                         capture_count = 0
                         pdf_count = 0
 
-                
+                    elif key_value == 103: # 开关设置相机参数菜单
+                        setting_flag = not setting_flag
+                        
+                    
+
+                    elif key_value == 82: # 上移相机设置菜单
+                        if setting_flag:
+                            setting_menu_index=setting_menu_index-1
+                            if setting_menu_index<=0:
+                                setting_menu_index=0
+           
+                    elif key_value == 84: # 下移相机设置菜单
+                        if setting_flag:
+                            setting_menu_index=setting_menu_index+1
+                            if setting_menu_index>=6:
+                                setting_menu_index=6
+                    elif key_value == 81: # 减小相机参数
+                        if setting_flag:
+                            adjust_camera_settings(setting_menu_index,-1)
+   
+                    elif key_value == 83: # 增大相机参数
+                        if setting_flag:
+                            adjust_camera_settings(setting_menu_index,1)
+          
 
                 
                 
