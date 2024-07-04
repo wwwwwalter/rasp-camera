@@ -733,9 +733,9 @@ def adjust_camera_settings(index,value):
             auto_exposure=1
             
             if value==1:
-                exposure_time_absolute+=100
+                exposure_time_absolute+=10
             else:
-                exposure_time_absolute-=100
+                exposure_time_absolute-=10
 
             if exposure_time_absolute<=0:
                 exposure_time_absolute=1
