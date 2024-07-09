@@ -8,9 +8,12 @@ import threading
 import subprocess
 import freetype
 import numpy as np
+import mvsdk
+import platform
 from weasyprint import HTML
 from bs4 import BeautifulSoup
 import torch.nn as nn
+
 
 
 class LightNet(nn.Module):
@@ -211,27 +214,19 @@ def update_ui_info(frame):
         if setting_flag:
             # 左上：相机设置菜单
             global setting_menu_index
-            global brightness,contrast,saturation
-            global white_balance_temperature,white_balance_automatic
-            global exposure_time_absolute,auto_exposure
+            global exposure_time_absolute,wb_red_gain,wb_green_gain,wb_blue_gain
             
-            # 分别定义每个参数的字符串
-            brightness_info = "%s明亮度[-64,0,64]：%d" % (">" if setting_menu_index==0 else "  ", brightness)
-            contrast_info = "%s对比度[0,32,64]：%d" % (">" if setting_menu_index==1 else "  ",contrast)
-            saturation_info = "%s饱和度[0,64,128]：%d" % (">" if setting_menu_index==2 else "  ",saturation)
-            white_balance_info = "%s白平衡[2800,4600,6500]：%d" % (">" if setting_menu_index==3 else "  ",white_balance_temperature)
-            exposure_info = "%s曝光度[1,157,5000]：%d" % (">" if setting_menu_index==4 else "  ",exposure_time_absolute)
-            auto_exposure_status = "%s自动曝光：%s" % (">" if setting_menu_index==5 else "  ", "ON" if auto_exposure == 3 else "OFF")
-            auto_white_balance_status = "%s自动白平衡：%s" % (">" if setting_menu_index==6 else "  ", "ON" if white_balance_automatic == 1 else "OFF")
-            
-            # camera_info = "明亮度[-64,64,0]：%d\n对比度[0,64,32]：%d\n饱和度[0,128,64]：%d\n白平衡[2800,6500,4600]：%d\n曝光度[1,5000,157]：%d\n自动曝光：%s\n自动白平衡：%s" % (brightness,contrast,saturation,white_balance_temperature,exposure_time_absolute, "ON" if auto_exposure==3 else "OFF","ON" if white_balance_automatic==1 else "OFF")
-            draw_chinese_text_no_background(frame,brightness_info,(50,100),font_size=30,color=(0,255,0))
-            draw_chinese_text_no_background(frame,contrast_info,(50,130),font_size=30,color=(0,255,0))
-            draw_chinese_text_no_background(frame,saturation_info,(50,160),font_size=30,color=(0,255,0))
-            draw_chinese_text_no_background(frame,white_balance_info,(50,190),font_size=30,color=(0,255,0))
-            draw_chinese_text_no_background(frame,exposure_info,(50,220),font_size=30,color=(0,255,0))
-            draw_chinese_text_no_background(frame,auto_exposure_status,(50,250),font_size=30,color=(0,255,0))
-            draw_chinese_text_no_background(frame,auto_white_balance_status,(50,280),font_size=30,color=(0,255,0))
+            # 分别定义每个参数的字符串            
+            exposure_info = "%s曝光时间[0,30]：%d" % (">" if setting_menu_index==0 else "  ", exposure_time_absolute)
+            wb_red_gain_info = "%s红增益[0,255]：%d" % (">" if setting_menu_index==1 else "  ", wb_red_gain)
+            wb_green_gain_info = "%s绿增益[0,255]：%d" % (">" if setting_menu_index==2 else "  ", wb_green_gain)
+            wb_blue_gain_info = "%s蓝增益[0,255]：%d" % (">" if setting_menu_index==3 else "  ", wb_blue_gain)
+
+            draw_chinese_text_no_background(frame,exposure_info,(40,120),font_size=30,color=(0,255,0))
+            draw_chinese_text_no_background(frame,wb_red_gain_info,(40,150),font_size=30,color=(0,255,0))
+            draw_chinese_text_no_background(frame,wb_green_gain_info,(40,180),font_size=30,color=(0,255,0))
+            draw_chinese_text_no_background(frame,wb_blue_gain_info,(40,210),font_size=30,color=(0,255,0))
+
         
         # 左下：显示菜单
         global menu_info,assistant_flag,capture_count,pdf_count
@@ -267,40 +262,194 @@ def update_ui_info(frame):
 
     return frame
 
+def SetCameraResolution(hCamera, offsetx, offsety, width, height):
+    resolution = mvsdk.CameraGetImageResolution(hCamera)
+
+    # 设置成0xff表示自定义分辨率，设置成0到N表示选择预设分辨率
+    resolution.iIndex = 0xff
+
+    # 视场偏移
+    resolution.iHOffsetFOV = offsetx
+    resolution.iVOffsetFOV = offsety
+
+    # BIN SKIP 模式设置（需要相机硬件支持）
+    # iWidthFOV表示相机的视场宽度，iWidth表示相机实际输出宽度
+    # 大部分情况下iWidthFOV=iWidth。有些特殊的分辨率模式如BIN2X2：iWidthFOV=2*iWidth，表示视场是实际输出宽度的2倍
+
+    resolution.uBinSumMode = 0
+    resolution.uBinAverageMode = 0
+    resolution.uResampleMask = 0
+    resolution.uSkipMode = 0
+
+    resolution.iWidthFOV = width
+    resolution.iHeightFOV = height
+    resolution.iWidth = resolution.iWidthFOV
+    resolution.iHeight = resolution.iHeightFOV
+
+    # ISP软件缩放宽高，都为0则表示不缩放
+    resolution.iWidthZoomSw = 0
+    resolution.iHeightZoomSw = 0
+
+    # 硬件缩放
+    resolution.iWidthZoomHd = 0
+    resolution.iHeightZoomHd = 0
+
+    mvsdk.CameraSetImageResolution(hCamera, resolution)
+
+    resolution = mvsdk.CameraGetImageResolution(hCamera)
+
+    print("resolution.iIndex:", resolution.iIndex)
+    print("resolution.acDescription:", resolution.acDescription)
+    print("resolution.iWidthFOV:", resolution.iWidthFOV)
+    print("resolution.iHeightFOV:", resolution.iHeightFOV)
+    print("resolution.iWidth:", resolution.iWidth)
+    print("resolution.iHeight:", resolution.iHeight)
+    print("resolution.iHOffsetFOV:", resolution.iHOffsetFOV)
+    print("resolution.iVOffsetFOV:", resolution.iVOffsetFOV)
+    
+    print("resolution.iWidthZoomSw:", resolution.iWidthZoomSw)
+    print("resolution.iHeightZoomSw:", resolution.iHeightZoomSw)
+    
+    print("resolution.iWidthZoomHd:", resolution.iWidthZoomHd)
+    print("resolution.iHeightZoomHd:", resolution.iHeightZoomHd)
+    
+    print("resolution.uBinAverageMode:", resolution.uBinAverageMode)
+    print("resolution.uBinSumMode:", resolution.uBinSumMode)
+    print("resolution.uResampleMask:", resolution.uResampleMask)
+    print("resolution.uSkipMode:", resolution.uSkipMode)
 def init_camera():
     global video,frame,camera_status,key_value
+    global hCamera,pFrameBuffer
+    global exposure_time_absolute,wb_red_gain,wb_green_gain,wb_blue_gain
+    
+    
     try:
-        video = cv2.VideoCapture(0,cv2.CAP_V4L2)
-        video.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter.fourcc('M','J','P','G'))
-        if not video.isOpened():
-            raise BaseException
-    except BaseException:
+        print('init camera')
+        # 枚举相机
+        DevList = mvsdk.CameraEnumerateDevice()
+        nDev = len(DevList)
+        if nDev < 1:
+            print("No camera was found!")
+            raise Exception("No camera was found!")
+
+        for i, DevInfo in enumerate(DevList):
+            print("{}: {} {}".format(i, DevInfo.GetFriendlyName(), DevInfo.GetPortType()))
+        i = 0 if nDev == 1 else int(input("Select camera: "))
+        DevInfo = DevList[i]
+        print(DevInfo)
+
+        # 打开相机
+        hCamera = 0
+        try:
+            hCamera = mvsdk.CameraInit(DevInfo, -1, -1)
+        except mvsdk.CameraException as e:
+            print("CameraInit Failed({}): {}".format(e.error_code, e.message))
+            raise Exception("CameraInit Failed({})".format(e.error_code))
+
+        # 获取相机特性描述
+        cap = mvsdk.CameraGetCapability(hCamera)
+
+        # 判断是黑白相机还是彩色相机
+        monoCamera = (cap.sIspCapacity.bMonoSensor != 0)
+
+        # 黑白相机让ISP直接输出MONO数据，而不是扩展成R=G=B的24位灰度
+        if monoCamera:
+            mvsdk.CameraSetIspOutFormat(hCamera, mvsdk.CAMERA_MEDIA_TYPE_MONO8)
+        else:
+            mvsdk.CameraSetIspOutFormat(hCamera, mvsdk.CAMERA_MEDIA_TYPE_BGR8)
+
+        # 相机模式切换成连续采集
+        mvsdk.CameraSetTriggerMode(hCamera, 0)
+
+        # 设置相机模拟增益值
+        mvsdk.CameraSetAnalogGain(hCamera, 1)
+        value = mvsdk.CameraGetAnalogGain(hCamera)
+        print("模拟增益: ", value * cap.sExposeDesc.fAnalogGainStep)
+
+        # 手动曝光，初始时每帧曝光时间15ms
+        mvsdk.CameraSetAeState(hCamera, 0)
+        mvsdk.CameraSetExposureTime(hCamera, 15 * 1000)
+        mvsdk.CameraGetExposureTime(hCamera)
+        print("曝光时间: ",mvsdk.CameraGetExposureTime(hCamera))
+        exposure_time_absolute = int(mvsdk.CameraGetExposureTime(hCamera)/1000)
+
+        # 设置相机白平衡，此处设置为手动模式
+        # 初始时为一键白平衡
+        mvsdk.CameraSetWbMode(hCamera, False)
+        # mvsdk.CameraSetOnceWB(hCamera)
+        mvsdk.CameraSetGain(hCamera,100,125,199)
+        print("白平衡: ", mvsdk.CameraGetGain(hCamera))
+        wb_red_gain,wb_green_gain,wb_blue_gain = mvsdk.CameraGetGain(hCamera)
+
+        # 设置相机分辨率
+        try:
+            SetCameraResolution(hCamera, 512, 360, 960, 540)
+        except:
+            raise Exception("SetCameraResolution Error")
+        
+        
+        # 让SDK内部取图线程开始工作
+        mvsdk.CameraPlay(hCamera)
+
+        # 计算RGB buffer所需的大小，这里直接按照相机的最大分辨率来分配
+        FrameBufferSize = cap.sResolutionRange.iWidthMax * cap.sResolutionRange.iHeightMax * (1 if monoCamera else 3)
+
+        # 分配RGB buffer，用来存放ISP输出的图像
+        # 备注：从相机传输到PC端的是RAW数据，在PC端通过软件ISP转为RGB数据（如果是黑白相机就不需要转换格式，但是ISP还有其它处理，所以也需要分配这个buffer）
+        pFrameBuffer = mvsdk.CameraAlignMalloc(FrameBufferSize, 16)
+        
+    except Exception as e:
         camera_status = False
+        print("init camera error: ",e)
+        # 关闭相机
+        mvsdk.CameraUnInit(hCamera)
+        # 释放帧缓存
+        if pFrameBuffer:
+            mvsdk.CameraAlignFree(pFrameBuffer)
+            pFrameBuffer = None
+        # time.sleep(1) # 间隔1s
         frame = update_ui_info(white_img)
         cv2.imshow("image",frame)
         cv2.waitKey(500)
-        print("faild open camera!")
+        
     else:
         camera_status = True
+    
+    
+    
+    
+    # try:
+    #     video = cv2.VideoCapture(0,cv2.CAP_V4L2)
+    #     video.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter.fourcc('M','J','P','G'))
+    #     if not video.isOpened():
+    #         raise BaseException
+    # except BaseException:
+    #     camera_status = False
+    #     frame = update_ui_info(white_img)
+    #     cv2.imshow("image",frame)
+    #     cv2.waitKey(500)
+    #     print("faild open camera!")
+    # else:
+    #     camera_status = True
         
         
-        video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        video.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        video.set(cv2.CAP_PROP_FPS,30.0)
+    #     video.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    #     video.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    #     video.set(cv2.CAP_PROP_FPS,30.0)
         
-        fps = video.get(cv2.CAP_PROP_FPS)
-        size = (int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-        print(fps)
-        print(size)
+    #     fps = video.get(cv2.CAP_PROP_FPS)
+    #     size = (int(video.get(cv2.CAP_PROP_FRAME_WIDTH)), int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    #     print(fps)
+    #     print(size)
         
-        # 获取FourCC  
-        fourcc = int(video.get(cv2.CAP_PROP_FOURCC))  
-        # 将FourCC转换为对应的字符  
-        fourcc_char = chr((fourcc >> 0) & 0xFF) + chr((fourcc >> 8) & 0xFF) + chr((fourcc >> 16) & 0xFF) + chr((fourcc >> 24) & 0xFF)  
-        print(f"Current FourCC: {fourcc_char}") 
+    #     # 获取FourCC  
+    #     fourcc = int(video.get(cv2.CAP_PROP_FOURCC))  
+    #     # 将FourCC转换为对应的字符  
+    #     fourcc_char = chr((fourcc >> 0) & 0xFF) + chr((fourcc >> 8) & 0xFF) + chr((fourcc >> 16) & 0xFF) + chr((fourcc >> 24) & 0xFF)  
+    #     print(f"Current FourCC: {fourcc_char}") 
         
-        # 加载相机参数
-        load_camera_parameters()
+    #     # 加载相机参数
+    #     load_camera_parameters()
 
 
 
@@ -674,98 +823,64 @@ def save_camera_parameters():
     
 # 调节相机参数
 def adjust_camera_settings(index,value):
-    global brightness,contrast,saturation
-    global white_balance_temperature,white_balance_automatic
-    global exposure_time_absolute,auto_exposure 
+    global exposure_time_absolute 
+    global wb_red_gain,wb_green_gain,wb_blue_gain
     try:
-        if index==0: # 亮度
+        if index==0: # 曝光时间ms
             if value==1:
-                brightness+=4
+                exposure_time_absolute+=1
             else:
-                brightness-=4
+                exposure_time_absolute-=1
                 
-            if brightness<=-64:
-                brightness=-64
-            if brightness>=64:
-                brightness=64
-            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"brightness={brightness}"], check=True)
-        if index==1: # 对比度
-            if value==1:
-                contrast+=4
-            else:
-                contrast-=4
-            
-            if contrast<=0:
-                contrast==0
-            if contrast>=64:
-                contrast=64
-            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"contrast={contrast}"], check=True)
-        if index==2: # 饱和度
-            if value==1:
-                saturation+=4
-            else:
-                saturation-=4
-                
-            if saturation<=0:
-                saturation=0
-            if saturation>=128:
-                saturation=128
-            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"saturation={saturation}"], check=True)
-        if index==3: # 白平衡
-            # 关闭自动白平衡
-            white_balance_automatic=0
-            if value==1:
-                white_balance_temperature+=100
-            else:
-                white_balance_temperature-=100
-            if white_balance_temperature<=2800:
-                white_balance_temperature=2800
-            if white_balance_temperature>6500:
-                white_balance_temperature=6500
-            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"white_balance_automatic={white_balance_automatic}"], check=True)
-            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"white_balance_temperature={white_balance_temperature}"], check=True)
-            
-        if index==4: # 曝光度
-            # 关闭自动曝光，打开手动曝光
-            # min=0 max=3 default=3 value=3 (Aperture Priority Mode)
-            # 1: Manual Mode
-			# 3: Aperture Priority Mode
-            auto_exposure=1
-            
-            if value==1:
-                exposure_time_absolute+=100
-            else:
-                exposure_time_absolute-=100
-
             if exposure_time_absolute<=0:
-                exposure_time_absolute=1
-            if exposure_time_absolute>=5000:
-                exposure_time_absolute=5000
+                exposure_time_absolute=0
+            if exposure_time_absolute>=30:
+                exposure_time_absolute=30
+            #  set曝光时间
+            mvsdk.CameraSetAeState(hCamera, 0)
+            mvsdk.CameraSetExposureTime(hCamera, exposure_time_absolute * 1000)
+            # get曝光时间
+            mvsdk.CameraGetExposureTime(hCamera)
+            exposure_time_absolute = int(mvsdk.CameraGetExposureTime(hCamera)/1000)
             
-            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"auto_exposure={auto_exposure}"], check=True)
-            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"exposure_time_absolute={exposure_time_absolute}"], check=True)
-                
-        if index==5: # 自动曝光
-            # min=0 max=3 default=3 value=3 (Aperture Priority Mode)
-            # 1: Manual Mode
-			# 3: Aperture Priority Mode
-            if value==1: # 切换到自动曝光
-                auto_exposure=3
-            else: # 切换到手动曝光
-                auto_exposure=1
-            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"auto_exposure={auto_exposure}"], check=True)
-            # 获取当前的曝光度，用于更新menu
-            exposure_time_absolute = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=exposure_time_absolute", shell=True, text=True).strip().split(": ")[1])
-
-        if index == 6: # 自动白平衡
+        if index==1: # 白平衡红色增益
+            if value==1:
+                wb_red_gain+=5
+            else:
+                wb_red_gain-=5
             
-            if value==1: # 切换到自动白平衡
-                white_balance_automatic=1
-            else: # 切换到手动白平衡
-                white_balance_automatic=0
-            subprocess.run(["v4l2-ctl", "-d","/dev/video0","--set-ctrl", f"white_balance_automatic={white_balance_automatic}"], check=True)
-            # 获取当前的白平衡,用于更新menu
-            white_balance_temperature = int(subprocess.check_output(f"v4l2-ctl -d /dev/video0 --get-ctrl=white_balance_temperature", shell=True, text=True).strip().split(": ")[1])
+            if wb_red_gain<=0:
+                wb_red_gain=0
+            if wb_red_gain>=255:
+                wb_red_gain=255
+            mvsdk.CameraSetWbMode(hCamera, False)
+            mvsdk.CameraSetGain(hCamera,wb_red_gain,wb_green_gain,wb_blue_gain)
+        if index==2: # 白平衡绿色增益
+            if value==1:
+                wb_green_gain+=5
+            else:
+                wb_green_gain-=5
+            
+            if wb_green_gain<=0:
+                wb_green_gain=0
+            if wb_green_gain>=255:
+                wb_green_gain=255
+            mvsdk.CameraSetWbMode(hCamera, False)
+            mvsdk.CameraSetGain(hCamera,wb_red_gain,wb_green_gain,wb_blue_gain)
+        if index==3: # 白平衡蓝色增益
+            if value==1:
+                wb_blue_gain+=5
+            else:
+                wb_blue_gain-=5
+            
+            if wb_blue_gain<=0:
+                wb_blue_gain=0
+            if wb_blue_gain>=255:
+                wb_blue_gain=255
+            mvsdk.CameraSetWbMode(hCamera, False)
+            mvsdk.CameraSetGain(hCamera,wb_red_gain,wb_green_gain,wb_blue_gain) 
+            
+        
 
     except subprocess.CalledProcessError as e:
         print(f"Error adjusting camera settings: {e}")
@@ -791,13 +906,13 @@ if __name__ == "__main__":
     setting_flag=False              # 相机设置开关
     setting_menu_index=0            # 相机设置菜单索引
 
-    brightness=0                    # 亮度
-    contrast=0                      # 对比度
-    saturation=0                    # 饱和度
-    white_balance_temperature=0     # 白平衡
-    white_balance_automatic=0       # 自动白平衡
+
     exposure_time_absolute=0        # 曝光时间
-    auto_exposure=0                 # 自动曝光
+    
+    wb_red_gain = 0                 # 白平衡红色增益
+    wb_green_gain = 0               # 白平衡绿色增益
+    wb_blue_gain = 0                # 白平衡蓝色增益
+    
 
     width = 1920
     height = 1080
@@ -834,6 +949,10 @@ if __name__ == "__main__":
     frame_height = height
     writer = None  # 初始时不打开文件
     video_frame_count=0 #记录写入视频的帧数
+    
+    # hk
+    hCamera = None
+    pFrameBuffer = None
 
 
 
@@ -849,12 +968,39 @@ if __name__ == "__main__":
     while True:       
         # 检查相机状态
         if camera_status:
+            
+            # 从相机取一帧图片
             try:
-                ret, frame = video.read()
-                if (not ret) or (frame is None):
-                    raise BaseException
-            except:
+                # 从内核pRawData中读取帧数据到pFrameBuffer中
+                pRawData, FrameHead = mvsdk.CameraGetImageBuffer(hCamera, 200)
+                # 当拔掉相机后，下面都不会执行
+                mvsdk.CameraImageProcess(hCamera, pRawData, pFrameBuffer, FrameHead)
+                mvsdk.CameraReleaseImageBuffer(hCamera, pRawData)
+
+
+                # 此时图片已经存储在pFrameBuffer中，对于彩色相机pFrameBuffer=RGB数据，黑白相机pFrameBuffer=8位灰度数据
+                # 把pFrameBuffer转换成opencv的图像格式以进行后续算法处理
+                frame_data = (mvsdk.c_ubyte * FrameHead.uBytes).from_address(pFrameBuffer)
+                frame = np.frombuffer(frame_data, dtype=np.uint8)
+                frame = frame.reshape((FrameHead.iHeight, FrameHead.iWidth, 3))
+
+                frame = cv2.resize(frame, (1920, 1080), interpolation=cv2.INTER_LINEAR)
+
+            except Exception as e:
                 camera_status = False
+                if e.error_code == mvsdk.CAMERA_STATUS_TIME_OUT:
+                    print("CameraGetImageBuffer timeout({}): {}".format(e.error_code, 'timeout'))
+
+                print("main loop: ",e)
+                # 关闭相机
+                mvsdk.CameraUnInit(hCamera)
+                # 释放帧缓存
+                if pFrameBuffer:
+                    mvsdk.CameraAlignFree(pFrameBuffer)
+                    pFrameBuffer = None
+                # 结束本轮循环
+                continue
+
                 
             else:
                 # 保存视频
@@ -951,14 +1097,12 @@ if __name__ == "__main__":
                     elif key_value == 82: # 上移相机设置菜单
                         if setting_flag:
                             setting_menu_index=setting_menu_index-1
-                            if setting_menu_index<=0:
-                                setting_menu_index=0
+                            setting_menu_index=setting_menu_index%4
            
                     elif key_value == 84: # 下移相机设置菜单
                         if setting_flag:
                             setting_menu_index=setting_menu_index+1
-                            if setting_menu_index>=6:
-                                setting_menu_index=6
+                            setting_menu_index=setting_menu_index%4
                     elif key_value == 81: # 减小相机参数
                         if setting_flag:
                             adjust_camera_settings(setting_menu_index,-1)
@@ -966,6 +1110,11 @@ if __name__ == "__main__":
                     elif key_value == 83: # 增大相机参数
                         if setting_flag:
                             adjust_camera_settings(setting_menu_index,1)
+                    elif key_value == 13: # 一键白平衡
+                        # 一键白平衡
+                        mvsdk.CameraSetWbMode(hCamera, False)
+                        mvsdk.CameraSetOnceWB(hCamera)
+                        wb_red_gain,wb_green_gain,wb_blue_gain = mvsdk.CameraGetGain(hCamera)
           
 
                 
@@ -983,10 +1132,20 @@ if __name__ == "__main__":
     print(f"input FPS: {estimated_fps:.2f} FRAMES:{frame_count}")
 
 
-        
-                
+
+    # 释放hk相机
+    if(hCamera):
+        mvsdk.CameraUnInit(hCamera)
+        # 释放帧缓存
+        if pFrameBuffer:
+            mvsdk.CameraAlignFree(pFrameBuffer)
+            pFrameBuffer = None
+
+    # 释放usb相机     
     if video:
         video.release()
+        
+    # 释放opencv writer
     if writer:
         writer.release()
     cv2.destroyAllWindows()
