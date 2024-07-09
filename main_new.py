@@ -217,10 +217,10 @@ def update_ui_info(frame):
             global exposure_time_absolute,wb_red_gain,wb_green_gain,wb_blue_gain
             
             # 分别定义每个参数的字符串            
-            exposure_info = "%s曝光时间[0,30]：%d" % (">" if setting_menu_index==0 else "  ", exposure_time_absolute)
-            wb_red_gain_info = "%s红增益[0,255]：%d" % (">" if setting_menu_index==1 else "  ", wb_red_gain)
-            wb_green_gain_info = "%s绿增益[0,255]：%d" % (">" if setting_menu_index==2 else "  ", wb_green_gain)
-            wb_blue_gain_info = "%s蓝增益[0,255]：%d" % (">" if setting_menu_index==3 else "  ", wb_blue_gain)
+            exposure_info = "%s曝光时间[0, 30]：%d" % (">" if setting_menu_index==0 else "  ", exposure_time_absolute)
+            wb_red_gain_info = "%s红色增益[0,255]：%d" % (">" if setting_menu_index==1 else "  ", wb_red_gain)
+            wb_green_gain_info = "%s绿色增益[0,255]：%d" % (">" if setting_menu_index==2 else "  ", wb_green_gain)
+            wb_blue_gain_info = "%s蓝色增益[0,255]：%d" % (">" if setting_menu_index==3 else "  ", wb_blue_gain)
 
             draw_chinese_text_no_background(frame,exposure_info,(40,120),font_size=30,color=(0,255,0))
             draw_chinese_text_no_background(frame,wb_red_gain_info,(40,150),font_size=30,color=(0,255,0))
