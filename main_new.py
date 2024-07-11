@@ -368,7 +368,7 @@ def init_camera():
 
         # 手动曝光，初始时每帧曝光时间15ms
         mvsdk.CameraSetAeState(hCamera, 0)
-        mvsdk.CameraSetExposureTime(hCamera, 15 * 1000)
+        mvsdk.CameraSetExposureTime(hCamera, 8 * 1000)
         mvsdk.CameraGetExposureTime(hCamera)
         print("曝光时间: ",mvsdk.CameraGetExposureTime(hCamera))
         exposure_time_absolute = int(mvsdk.CameraGetExposureTime(hCamera)/1000)
@@ -377,13 +377,14 @@ def init_camera():
         # 初始时为一键白平衡
         mvsdk.CameraSetWbMode(hCamera, False)
         # mvsdk.CameraSetOnceWB(hCamera)
-        mvsdk.CameraSetGain(hCamera,100,125,199)
+        mvsdk.CameraSetGain(hCamera,100,115,214)
         print("白平衡: ", mvsdk.CameraGetGain(hCamera))
         wb_red_gain,wb_green_gain,wb_blue_gain = mvsdk.CameraGetGain(hCamera)
 
         # 设置相机分辨率
         try:
-            SetCameraResolution(hCamera, 512, 360, 960, 540)
+            # SetCameraResolution(hCamera, 512, 360, 960, 540)
+            SetCameraResolution(hCamera, 396, 320, 1200, 656)
         except:
             raise Exception("SetCameraResolution Error")
         
