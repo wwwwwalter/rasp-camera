@@ -1147,8 +1147,7 @@ if __name__ == "__main__":
                         wb_red_gain,wb_green_gain,wb_blue_gain = mvsdk.CameraGetGain(hCamera)
                     elif key_value == 53: # 预设值1                        
                         # 加载Scene_1参数
-                        read_camera_json("config/scene_1.json")
-                        
+                        read_camera_json("config/scene_1.json")                        
                         mvsdk.CameraSetAeState(hCamera, 0)
                         mvsdk.CameraSetExposureTime(hCamera, exposure_time_absolute * 1000)
                         
@@ -1160,6 +1159,26 @@ if __name__ == "__main__":
                     elif key_value == 54: # 预设值2
                         # 加载Scene_2参数
                         read_camera_json("config/scene_2.json")
+                        mvsdk.CameraSetAeState(hCamera, 0)
+                        mvsdk.CameraSetExposureTime(hCamera, exposure_time_absolute * 1000)
+                        
+                        mvsdk.CameraSetWbMode(hCamera, False)
+                        mvsdk.CameraSetGain(hCamera,wb_red_gain,wb_green_gain,wb_blue_gain)
+                        write_camera_json("config/hkcamera.json")
+                    
+                    elif key_value == 55: # 预设值3
+                        # 加载Scene_3参数
+                        read_camera_json("config/scene_3.json")
+                        mvsdk.CameraSetAeState(hCamera, 0)
+                        mvsdk.CameraSetExposureTime(hCamera, exposure_time_absolute * 1000)
+                        
+                        mvsdk.CameraSetWbMode(hCamera, False)
+                        mvsdk.CameraSetGain(hCamera,wb_red_gain,wb_green_gain,wb_blue_gain)
+                        write_camera_json("config/hkcamera.json")
+                    
+                    elif key_value == 56: # 预设值4
+                        # 加载Scene_4参数
+                        read_camera_json("config/scene_4.json")
                         mvsdk.CameraSetAeState(hCamera, 0)
                         mvsdk.CameraSetExposureTime(hCamera, exposure_time_absolute * 1000)
                         
