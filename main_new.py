@@ -317,6 +317,32 @@ def SetCameraResolution(hCamera, offsetx, offsety, width, height):
     print("resolution.uBinSumMode:", resolution.uBinSumMode)
     print("resolution.uResampleMask:", resolution.uResampleMask)
     print("resolution.uSkipMode:", resolution.uSkipMode)
+    
+    
+def read_camera_json(file_path):
+    global exposure_time_absolute,wb_red_gain,wb_green_gain,wb_blue_gain
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+        exposure_time_absolute = int(data['exposure_time_absolute'])
+        wb_red_gain = int(data['wb_red_gain'])
+        wb_green_gain = int(data['wb_green_gain'])
+        wb_blue_gain = int(data['wb_blue_gain'])
+    print("read_camera_json")
+        
+def write_camera_json(file_path):
+    camera_data = {
+        'exposure_time_absolute': exposure_time_absolute,
+        'wb_red_gain': wb_red_gain,
+        'wb_green_gain': wb_green_gain,
+        'wb_blue_gain': wb_blue_gain
+    }
+    with open(file_path,'w') as file:
+        json.dump(camera_data,file,indent=4)
+        
+    print("write_camera_json")
+    
+
+
 def init_camera():
     global video,frame,camera_status,key_value
     global hCamera,pFrameBuffer
@@ -360,27 +386,7 @@ def init_camera():
 
         # 相机模式切换成连续采集
         mvsdk.CameraSetTriggerMode(hCamera, 0)
-
-        # 设置相机模拟增益值
-        mvsdk.CameraSetAnalogGain(hCamera, 1)
-        value = mvsdk.CameraGetAnalogGain(hCamera)
-        print("模拟增益: ", value * cap.sExposeDesc.fAnalogGainStep)
-
-        # 手动曝光，初始时每帧曝光时间15ms
-        mvsdk.CameraSetAeState(hCamera, 0)
-        mvsdk.CameraSetExposureTime(hCamera, 8 * 1000)
-        mvsdk.CameraGetExposureTime(hCamera)
-        print("曝光时间: ",mvsdk.CameraGetExposureTime(hCamera))
-        exposure_time_absolute = int(mvsdk.CameraGetExposureTime(hCamera)/1000)
-
-        # 设置相机白平衡，此处设置为手动模式
-        # 初始时为一键白平衡
-        mvsdk.CameraSetWbMode(hCamera, False)
-        # mvsdk.CameraSetOnceWB(hCamera)
-        mvsdk.CameraSetGain(hCamera,100,115,214)
-        print("白平衡: ", mvsdk.CameraGetGain(hCamera))
-        wb_red_gain,wb_green_gain,wb_blue_gain = mvsdk.CameraGetGain(hCamera)
-
+        
         # 设置相机分辨率
         try:
             # SetCameraResolution(hCamera, 512, 360, 960, 540)
@@ -388,7 +394,24 @@ def init_camera():
         except:
             raise Exception("SetCameraResolution Error")
         
-        
+
+        # 加载相机参数
+        read_camera_json("config/hkcamera.json")
+
+        # 设置相机模拟增益值
+        mvsdk.CameraSetAnalogGain(hCamera, 1)
+        value = mvsdk.CameraGetAnalogGain(hCamera)
+        print("模拟增益: ", value * cap.sExposeDesc.fAnalogGainStep)
+
+        # 手动曝光
+        mvsdk.CameraSetAeState(hCamera, 0)
+        mvsdk.CameraSetExposureTime(hCamera, exposure_time_absolute * 1000)
+
+
+        # 设置相机白平衡，此处设置为手动模式
+        mvsdk.CameraSetWbMode(hCamera, False)
+        mvsdk.CameraSetGain(hCamera,wb_red_gain,wb_green_gain,wb_blue_gain)
+
         # 让SDK内部取图线程开始工作
         mvsdk.CameraPlay(hCamera)
 
@@ -999,6 +1022,9 @@ if __name__ == "__main__":
                 if pFrameBuffer:
                     mvsdk.CameraAlignFree(pFrameBuffer)
                     pFrameBuffer = None
+                
+                # 保存相机参数
+                write_camera_json("config/hkcamera.json")
                 # 结束本轮循环
                 continue
 
@@ -1092,6 +1118,8 @@ if __name__ == "__main__":
 
                     elif key_value == 103: # 开关设置相机参数菜单
                         setting_flag = not setting_flag
+                        if setting_flag == False:
+                            write_camera_json("config/hkcamera.json")
                         
                     
 
@@ -1115,7 +1143,29 @@ if __name__ == "__main__":
                         # 一键白平衡
                         mvsdk.CameraSetWbMode(hCamera, False)
                         mvsdk.CameraSetOnceWB(hCamera)
+                        write_camera_json("config/hkcamera.json")
                         wb_red_gain,wb_green_gain,wb_blue_gain = mvsdk.CameraGetGain(hCamera)
+                    elif key_value == 53: # 预设值1                        
+                        # 加载Scene_1参数
+                        read_camera_json("config/scene_1.json")
+                        
+                        mvsdk.CameraSetAeState(hCamera, 0)
+                        mvsdk.CameraSetExposureTime(hCamera, exposure_time_absolute * 1000)
+                        
+                        mvsdk.CameraSetWbMode(hCamera, False)
+                        mvsdk.CameraSetGain(hCamera,wb_red_gain,wb_green_gain,wb_blue_gain)
+                        write_camera_json("config/hkcamera.json")
+                       
+                        
+                    elif key_value == 54: # 预设值2
+                        # 加载Scene_2参数
+                        read_camera_json("config/scene_2.json")
+                        mvsdk.CameraSetAeState(hCamera, 0)
+                        mvsdk.CameraSetExposureTime(hCamera, exposure_time_absolute * 1000)
+                        
+                        mvsdk.CameraSetWbMode(hCamera, False)
+                        mvsdk.CameraSetGain(hCamera,wb_red_gain,wb_green_gain,wb_blue_gain)
+                        write_camera_json("config/hkcamera.json")
           
 
                 
